@@ -3,6 +3,9 @@
     <header class="dash-header">
       <h2>我的 Web3 博客空间</h2>
       <div class="user-info">
+        <button class="explore-btn" @click="$emit('go-to-explore')">
+          🌐 发现更多博客
+        </button>
         <span class="address-badge">👤 {{ shortAddress }}</span>
         <button class="logout-btn" @click="$emit('logout')">退出</button>
       </div>
@@ -101,6 +104,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.explore-btn {
+  padding: 8px 15px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer; margin-right: 15px; font-weight: bold;
+}
+.explore-btn:hover { background: #4f46e5; }
 .dashboard { max-width: 1200px; margin: 0 auto; padding: 20px; }
 .dash-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 30px;}
 .address-badge { background: #f1f5f9; padding: 8px 15px; border-radius: 20px; font-weight: bold; margin-right: 15px; }

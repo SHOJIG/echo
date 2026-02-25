@@ -246,6 +246,10 @@ contract BlogSystem is BlogToken {
         return userPool[user].publishedBlogs;
     }
 
+    function getBlogCount() public view returns (uint256) {
+        return blogs.length;
+    }
+
     struct BlogDetail {
         address owner;
         string name;
