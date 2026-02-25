@@ -29,3 +29,28 @@ export const getContract = () => {
   }
   return contract;
 };
+
+export const checkConnection = async () => {
+  // 1. 如果没有安装 MetaMask，直接返回 null
+  if (!window.ethereum) return null;
+  
+  try {
+    // 2. 静默获取已授权的账号列表（不弹窗）
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    
+    // 3. 如果数组里有账号，说明用户之前连接过
+    if (accounts.length > 0) {
+      // 悄悄地把 provider 和 contract 重新初始化好，防止主页报错
+      provider = new ethers.BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
+      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      
+      // 返回用户的钱包地址
+      return accounts[0];
+    }
+  } catch (error) {
+    console.error("静默检查连接状态失败:", error);
+  }
+  
+  return null; // 没连过就返回 null
+};

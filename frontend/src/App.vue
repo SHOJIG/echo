@@ -1,42 +1,78 @@
 <template>
-  <div class="app-container">
-    <header class="app-header">
-      <div class="title-area">
-        <h1>🌐 Web3 去中心化博客</h1>
-        <p>基于区块链与 IPFS 的抗审查内容发布平台</p>
-      </div>
-      <div class="wallet-area">
-        <WalletConnect />
-      </div>
-    </header>
-
-    <main class="app-main">
-      <PublishBlog />
-    </main>
+  <div v-if="isChecking" class="loading-screen">
+    <div class="loader"></div>
+    <p>正在同步区块链数据...</p>
   </div>
+
+  <LandingView v-else-if="!isLoggedIn" @login-success="handleLogin" />
+  
+  <DashboardView v-else :userAddress="currentUser" @logout="handleLogout" />
 </template>
 
 <script setup>
-import WalletConnect from './components/WalletConnect.vue';
-import PublishBlog from './components/PublishBlog.vue';
+import { ref, onMounted } from 'vue';
+import LandingView from './views/LandingView.vue';
+import DashboardView from './views/DashboardView.vue';
+import { checkConnection } from './utils/web3'; // 引入静默检查函数
+
+const isLoggedIn = ref(false);
+const currentUser = ref('');
+const isChecking = ref(true); // 默认一开始处于检查中状态
+
+// 组件挂载时，自动检查 MetaMask 状态
+onMounted(async () => {
+  const address = await checkConnection();
+  
+  if (address) {
+    // 如果之前连过，直接恢复状态
+    currentUser.value = address;
+    isLoggedIn.value = true;
+  }
+  
+  // 检查完毕，关闭过渡动画
+  isChecking.value = false;
+});
+
+const handleLogin = (address) => {
+  currentUser.value = address;
+  isLoggedIn.value = true;
+};
+
+const handleLogout = () => {
+  isLoggedIn.value = false;
+  currentUser.value = '';
+};
 </script>
 
 <style>
-/* 基础全局样式重置 */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f1f5f9; color: #0f172a; }
+body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc; color: #0f172a; }
 
-.app-container { max-width: 900px; margin: 0 auto; padding: 20px; }
+/* 过渡动画层的样式 */
+.loading-screen {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background-color: #0f172a;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
 
-.app-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
-.title-area h1 { font-size: 24px; color: #1e293b; margin-bottom: 5px; }
-.title-area p { font-size: 14px; color: #64748b; }
+.loader {
+  border: 4px solid rgba(255,255,255,0.1);
+  border-left-color: #8b5cf6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
 
-.wallet-area { min-width: 280px; }
-
-/* 响应式：手机端换行展示 */
-@media (max-width: 600px) {
-  .app-header { flex-direction: column; align-items: flex-start; gap: 20px; }
-  .wallet-area { width: 100%; }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 </style>
