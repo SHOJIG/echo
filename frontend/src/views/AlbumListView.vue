@@ -57,7 +57,7 @@ const albums = ref([]);
 const loading = ref(true);
 
 // IPFS 网关前缀拼接
-const getIpfsUrl = (cid) => `https://gateway.pinata.cloud/ipfs/${cid}`;
+const getIpfsUrl = (cid) => `https://beige-accepted-amphibian-264.mypinata.cloud/ipfs/${cid}`;
 
 const fetchAlbums = async () => {
   if (!props.userAddress) return;

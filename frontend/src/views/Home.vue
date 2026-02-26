@@ -110,8 +110,10 @@ const props = defineProps({
 
 const emit = defineEmits(['logout', 'go-to-explore']);
 
+const getIpfsUrl = (cid) => `https://beige-accepted-amphibian-264.mypinata.cloud/ipfs/${cid}`;
 // 保留此处的头像，因为中间的主体卡片依然需要展示头像
-const userAvatar = ref('https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png');
+const defaultAvatar = 'https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png';
+const userAvatar = ref(defaultAvatar);
 
 const shortAddress = computed(() => {
   return props.userAddress ? `${props.userAddress.slice(0, 6)}...${props.userAddress.slice(-4)}` : '';
@@ -130,9 +132,18 @@ const fetchUserInfo = async () => {
   if (!props.userAddress) return;
   try {
     const contract = getContract();
+    // 拉取名字
     username.value = await contract.getUsername(props.userAddress);
+    
+    // 拉取头像
+    const avatarCid = await contract.getAvatar(props.userAddress);
+    if (avatarCid) {
+      userAvatar.value = getIpfsUrl(avatarCid);
+    }
   } catch (error) {
-    console.error("获取用户名失败:", error);
+    username.value = props.userAddress;
+    userAvatar.value = defaultAvatar;
+    console.error("获取用户资料失败:", error);
   }
 };
 

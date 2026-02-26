@@ -44,11 +44,24 @@
             <div class="dropdown-item" @click="handleEditUsername">
               ✏️ 修改名字
             </div>
+            
+            <div class="dropdown-item" @click="triggerAvatarUpload">
+              🖼️ {{ isUploadingAvatar ? '上传中...' : '修改头像' }}
+            </div>
+            
             <div class="dropdown-item logout-item" @click="handleLogout">
               🚪 退出登录
             </div>
           </div>
         </transition>
+        
+        <input 
+          type="file" 
+          ref="avatarInput" 
+          style="display: none;" 
+          accept="image/*" 
+          @change="handleAvatarUpload" 
+        />
       </div>
     </div>
   </header>
@@ -64,44 +77,98 @@ const route = useRoute();
 const router = useRouter();
 const emit = defineEmits(['logout']);
 
-const userAvatar = ref('https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png');
+// 默认头像
+const defaultAvatar = 'https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png';
+const userAvatar = ref(defaultAvatar);
+
+// IPFS 网关前缀（请根据你上一步的选择，替换为你自己的专属网关或公共网关）
+const getIpfsUrl = (cid) => `https://gateway.pinata.cloud/ipfs/${cid}`;
 
 // --- 下拉菜单状态控制 ---
 const showAvatarDropdown = ref(false);
 const showFaucetDropdown = ref(false);
 
-// 点击空白处关闭所有下拉菜单
 const closeAllDropdowns = () => {
   showAvatarDropdown.value = false;
   showFaucetDropdown.value = false;
 };
 
-// 切换头像下拉（并关闭水龙头下拉）
 const toggleAvatarDropdown = (e) => {
   showAvatarDropdown.value = !showAvatarDropdown.value;
   showFaucetDropdown.value = false;
   e.stopPropagation(); 
 };
 
-// 切换水龙头下拉（并关闭头像下拉）
 const toggleFaucetDropdown = (e) => {
   showFaucetDropdown.value = !showFaucetDropdown.value;
   showAvatarDropdown.value = false;
   e.stopPropagation();
 };
 
-// --- 余额与水龙头逻辑 ---
+// --- 头像上传逻辑 ---
+const avatarInput = ref(null);
+const isUploadingAvatar = ref(false);
+
+const triggerAvatarUpload = () => {
+  if (isUploadingAvatar.value) return;
+  avatarInput.value.click(); // 触发隐藏的 file input
+};
+
+const handleAvatarUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  isUploadingAvatar.value = true;
+  closeAllDropdowns(); // 开始上传时关闭下拉菜单
+
+  try {
+    // 1. 上传到 Pinata IPFS
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('pinataMetadata', JSON.stringify({ name: 'UserAvatar' }));
+
+    const pinataJwt = import.meta.env.VITE_PINATA_JWT;
+    const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${pinataJwt}` },
+      body: formData
+    });
+
+    if (!res.ok) throw new Error("上传到 Pinata 失败");
+    const resData = await res.json();
+    const ipfsCID = resData.IpfsHash;
+
+    // 2. 将 CID 存入区块链智能合约
+    const contract = getContract();
+    const tx = await contract.setAvatar(ipfsCID);
+    
+    alert("头像已传至 IPFS，请在 MetaMask 中确认并等待区块打包...");
+    await tx.wait(); 
+    
+    alert("头像修改成功！");
+    window.location.reload(); // 刷新页面同步最新头像
+
+  } catch (e) {
+    console.error("修改头像失败:", e);
+    alert("上传或上链失败，请查看控制台日志。");
+  } finally {
+    isUploadingAvatar.value = false;
+    if (avatarInput.value) avatarInput.value.value = ''; // 清空选择
+  }
+};
+
+
+// --- 余额、水龙头、数据拉取逻辑 ---
 const tokenBalance = ref('0.00');
 const canClaimTokens = ref(false);
 const isClaiming = ref(false);
 const claimBtnText = ref('检查中...');
 
-// 检查水龙头领取状态
 const checkFaucetStatus = async (address, contract) => {
   try {
     const lastTime = await contract.lastFaucetTime(address);
     const lastTimeMs = Number(lastTime) * 1000;
-    const cooldownMs = 24 * 60 * 60 * 1000; // 24小时的毫秒数
+    const cooldownMs = 24 * 60 * 60 * 1000;
     const nowMs = Date.now();
 
     if (lastTimeMs === 0 || nowMs >= lastTimeMs + cooldownMs) {
@@ -109,11 +176,10 @@ const checkFaucetStatus = async (address, contract) => {
       claimBtnText.value = '🎁 立即领取 (100 BLG)';
     } else {
       canClaimTokens.value = false;
-      // 计算还要多久才能领
       const nextTime = new Date(lastTimeMs + cooldownMs);
       const hours = nextTime.getHours().toString().padStart(2, '0');
       const minutes = nextTime.getMinutes().toString().padStart(2, '0');
-      claimBtnText.value = `冷却中 (${hours}:${minutes} 可领)`;
+      claimBtnText.value = `冷却中 (明早 ${hours}:${minutes} 可领)`;
     }
   } catch (e) {
     console.error("检查水龙头状态失败:", e);
@@ -121,40 +187,43 @@ const checkFaucetStatus = async (address, contract) => {
   }
 };
 
-// 拉取余额并连带检查水龙头状态
-const fetchBalance = async () => {
+// [修改] 统一拉取用户数据 (余额、水龙头状态、头像)
+const fetchUserData = async () => {
   try {
     if (window.ethereum) {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const address = await signer.getAddress();
-      
       const contract = getContract();
+      
+      // 1. 获取余额
       const rawBalance = await contract.balanceOf(address);
       tokenBalance.value = Number(ethers.formatEther(rawBalance)).toFixed(2);
 
-      // 同步检查领取状态
+      // 2. 获取链上头像 CID
+      const avatarCid = await contract.getAvatar(address);
+      if (avatarCid) {
+        userAvatar.value = getIpfsUrl(avatarCid);
+      }
+
+      // 3. 检查领取状态
       await checkFaucetStatus(address, contract);
     }
   } catch (error) {
-    console.error("获取代币余额失败:", error);
+    console.error("获取用户数据失败:", error);
   }
 };
 
-// 处理领取水龙头
 const handleClaimTokens = async () => {
   if (!canClaimTokens.value || isClaiming.value) return;
-
   try {
     isClaiming.value = true;
     const contract = getContract();
     const tx = await contract.claimTokens();
     alert("正在向区块链发送领取请求，请等待区块确认...");
-    
     await tx.wait(); 
     alert("🎉 领取成功！100 BLG 已发放至您的钱包。");
-    
-    await fetchBalance(); // 刷新余额和按钮状态
+    await fetchUserData(); 
     closeAllDropdowns();
   } catch(e) {
     console.error("领取失败:", e);
@@ -164,7 +233,6 @@ const handleClaimTokens = async () => {
   }
 };
 
-// --- 用户资料及登出逻辑 ---
 const handleLogout = () => {
   closeAllDropdowns();
   emit('logout'); 
@@ -172,27 +240,23 @@ const handleLogout = () => {
 
 const handleEditUsername = async () => {
   closeAllDropdowns(); 
-  
   const newName = prompt("请输入您的新用户名：");
   if (!newName || newName.trim() === "") return;
-  
   try {
     const contract = getContract();
     const tx = await contract.setUsername(newName);
     alert("请求已发送，正在等待区块链确认，请稍候...");
-    
     await tx.wait(); 
     alert("名字修改成功！");
     window.location.reload(); 
   } catch(e) {
     console.error("修改名字失败:", e);
-    alert("修改失败，请检查控制台报错。");
   }
 };
 
 onMounted(() => {
   document.addEventListener('click', closeAllDropdowns);
-  fetchBalance(); 
+  fetchUserData(); // 页面加载时拉取数据
 });
 
 onUnmounted(() => {
@@ -201,7 +265,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ================= 顶部导航栏样式 ================= */
+/* ====== 这里的 CSS 和上一步完全一样，保持你之前的代码即可 ====== */
 .top-navbar { display: flex; justify-content: space-between; align-items: center; padding: 0 40px; height: 60px; background: #ffffff; border-radius: 0; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); width: 100%; box-sizing: border-box; position: relative; z-index: 100; }
 .nav-left { display: flex; align-items: center; gap: 30px; }
 .nav-links { display: flex; gap: 25px; }
@@ -218,7 +282,8 @@ onUnmounted(() => {
 .nav-avatar-wrapper:hover { border-color: #6366f1; }
 .nav-avatar { width: 100%; height: 100%; object-fit: cover; }
 .avatar-dropdown { position: absolute; top: 55px; right: 0; background: #ffffff; border: 1px solid #ebeef5; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); min-width: 140px; z-index: 100; overflow: hidden; }
-.dropdown-item { padding: 12px 20px; font-size: 0.95rem; color: #606266; cursor: pointer; transition: background 0.2s, color 0.2s; font-weight: 500; }
+.dropdown-item { padding: 12px 20px; font-size: 0.95rem; color: #606266; cursor: pointer; transition: background 0.2s, color 0.2s; font-weight: 500; border-bottom: 1px solid #f1f5f9; }
+.dropdown-item:last-child { border-bottom: none; }
 .dropdown-item:hover { background: #f8fafc; color: #6366f1; }
 .logout-item { color: #ef4444; }
 .logout-item:hover { background: #fef2f2; color: #dc2626; }
