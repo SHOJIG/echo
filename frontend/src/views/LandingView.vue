@@ -15,7 +15,7 @@
       <p class="subtitle">掌控你的数据主权，内容永久上链</p>
       
       <button class="enter-btn" @click="handleEnter" :disabled="isConnecting">
-        {{ isConnecting ? '连接中...' : '🚀 进入 Web3 世界' }}
+        {{ isConnecting ? '连接中...' : '开始探索' }}
       </button>
     </div>
   </div>
@@ -134,3 +134,4 @@ const handleEnter = async () => {
   to { opacity: 1; transform: translateY(0); }
 }
 </style>
+

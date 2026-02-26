@@ -1,41 +1,48 @@
 <template>
-  <div class="all-blogs-dashboard">
-    <header class="page-header">
-      <div class="title-section">
-        <h2>🌐 发现 Web3 博客</h2>
-        <p>探索去中心化世界里的所有声音</p>
-      </div>
-      <button class="back-btn" @click="$emit('go-back')">返回我的空间</button>
-    </header>
+  <div>
+    <TopNavbar 
+      @go-to-explore="$emit('go-to-explore')" 
+      @logout="$emit('logout')" 
+    />
 
-    <main class="dash-content">
-      <div v-if="loading" class="loading-state">
-        <div class="loader"></div>
-        <p>正在从区块链拉取所有博客数据...</p>
-      </div>
-      
-      <div v-else-if="allBlogs.length === 0" class="empty-state">
-        目前还没有任何人发布博客哦，快去发布第一篇吧！
-      </div>
+    <div class="all-blogs-dashboard">
+      <header class="page-header">
+        <div class="title-section">
+          <h2>🌐 发现 Web3 博客</h2>
+          <p>探索去中心化世界里的所有声音</p>
+        </div>
+        <button class="back-btn" @click="$emit('go-back')">返回我的空间</button>
+      </header>
 
-      <div v-else class="blog-grid">
-        <div v-for="blog in allBlogs" :key="blog.id" class="blog-card">
-          <h4>{{ blog.name }}</h4>
-          <p class="author">👤 作者: {{ formatAddress(blog.owner) }}</p>
-          <p class="intro">{{ blog.intro }}</p>
-          
-          <div class="blog-meta">
-            <span>👁️ 浏览量: {{ blog.viewCount }}</span>
-            <span>💰 价格: {{ blog.price }} BLG</span>
-          </div>
-          
-          <div class="blog-footer">
-            <small>发布时间: {{ blog.publishDate }}</small>
-            <button class="action-btn" @click="handleViewDetail(blog.id)">查看文章</button>
+      <main class="dash-content">
+        <div v-if="loading" class="loading-state">
+          <div class="loader"></div>
+          <p>正在从区块链拉取所有博客数据...</p>
+        </div>
+        
+        <div v-else-if="allBlogs.length === 0" class="empty-state">
+          目前还没有任何人发布博客哦，快去发布第一篇吧！
+        </div>
+
+        <div v-else class="blog-grid">
+          <div v-for="blog in allBlogs" :key="blog.id" class="blog-card">
+            <h4>{{ blog.name }}</h4>
+            <p class="author">👤 作者: {{ formatAddress(blog.owner) }}</p>
+            <p class="intro">{{ blog.intro }}</p>
+            
+            <div class="blog-meta">
+              <span>👁️ 浏览量: {{ blog.viewCount }}</span>
+              <span>💰 价格: {{ blog.price }} BLG</span>
+            </div>
+            
+            <div class="blog-footer">
+              <small>发布时间: {{ blog.publishDate }}</small>
+              <button class="action-btn" @click="handleViewDetail(blog.id)">查看文章</button>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -43,6 +50,7 @@
 import { ref, onMounted } from 'vue';
 import { ethers } from 'ethers';
 import { getContract } from '../utils/web3';
+import TopNavbar from '../components/TopNavbar.vue'; 
 
 const emit = defineEmits(['go-back']);
 

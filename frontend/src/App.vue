@@ -8,10 +8,10 @@
   
   <BlogListView 
     v-else-if="currentView === 'all-blogs'" 
-    @go-back="currentView = 'dashboard'" 
+    @go-back="currentView = 'home'" 
   />
 
-  <DashboardView 
+  <Home
     v-else 
     :userAddress="currentUser" 
     @logout="handleLogout" 
@@ -22,7 +22,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import LandingView from './views/LandingView.vue';
-import DashboardView from './views/DashboardView.vue';
+import Home from './views/Home.vue';
 import BlogListView from './views/BlogListView.vue'; // 引入刚才写的组件
 import { checkConnection } from './utils/web3'; 
 
@@ -30,8 +30,7 @@ const isLoggedIn = ref(false);
 const currentUser = ref('');
 const isChecking = ref(true); 
 
-// 新增：用于控制页面视图，默认为 'dashboard'
-const currentView = ref('dashboard');
+const currentView = ref('home');
 
 // 组件挂载时，自动检查 MetaMask 状态
 onMounted(async () => {
@@ -55,7 +54,7 @@ const handleLogin = (address) => {
 const handleLogout = () => {
   isLoggedIn.value = false;
   currentUser.value = '';
-  currentView.value = 'dashboard';
+  currentView.value = 'home';
 };
 
 </script>
