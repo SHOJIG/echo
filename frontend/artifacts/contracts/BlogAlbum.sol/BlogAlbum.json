@@ -1,8 +1,8 @@
-// 合约地址
-export const CONTRACT_ADDRESS = "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318";
-
-// 提取你合约中需要用到的核心 ABI (这里做了精简，实际可以直接把 Remix 里的 ABI 完整复制过来)
-export const CONTRACT_ABI = [
+{
+  "_format": "hh3-artifact-1",
+  "contractName": "BlogAlbum",
+  "sourceName": "contracts/BlogAlbum.sol",
+  "abi": [
     {
       "inputs": [
         {
@@ -508,30 +508,6 @@ export const CONTRACT_ABI = [
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "blogId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "string",
-          "name": "content",
-          "type": "string"
-        }
-      ],
-      "name": "addComment",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
           "name": "albumId",
           "type": "uint256"
         },
@@ -723,24 +699,6 @@ export const CONTRACT_ABI = [
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "blogId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "string",
-          "name": "reason",
-          "type": "string"
-        }
-      ],
-      "name": "createHideProposal",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "inputs": [],
       "name": "decimals",
       "outputs": [
@@ -767,19 +725,6 @@ export const CONTRACT_ABI = [
         }
       ],
       "name": "deletePicture",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "proposalId",
-          "type": "uint256"
-        }
-      ],
-      "name": "executeProposal",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -842,114 +787,6 @@ export const CONTRACT_ABI = [
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "getBlogCount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "blogId",
-          "type": "uint256"
-        }
-      ],
-      "name": "getBlogDetail",
-      "outputs": [
-        {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "owner",
-              "type": "address"
-            },
-            {
-              "internalType": "string",
-              "name": "name",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "intro",
-              "type": "string"
-            },
-            {
-              "internalType": "string",
-              "name": "ipfsCID",
-              "type": "string"
-            },
-            {
-              "internalType": "uint256",
-              "name": "price",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "viewCount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "publishDate",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bool",
-              "name": "isHidden",
-              "type": "bool"
-            }
-          ],
-          "internalType": "struct BlogStorage.BlogDetail",
-          "name": "",
-          "type": "tuple"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "blogId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "commentId",
-          "type": "uint256"
-        }
-      ],
-      "name": "getComment",
-      "outputs": [
-        {
-          "internalType": "address",
-          "name": "buyer",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "date",
-          "type": "uint256"
-        },
-        {
-          "internalType": "string",
-          "name": "content",
-          "type": "string"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
       "inputs": [
         {
           "internalType": "address",
@@ -958,44 +795,6 @@ export const CONTRACT_ABI = [
         }
       ],
       "name": "getUserAlbums",
-      "outputs": [
-        {
-          "internalType": "uint256[]",
-          "name": "",
-          "type": "uint256[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
-        }
-      ],
-      "name": "getUserPublishedBlogs",
-      "outputs": [
-        {
-          "internalType": "uint256[]",
-          "name": "",
-          "type": "uint256[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "user",
-          "type": "address"
-        }
-      ],
-      "name": "getUserPurchasedBlogs",
       "outputs": [
         {
           "internalType": "uint256[]",
@@ -1209,58 +1008,6 @@ export const CONTRACT_ABI = [
       "inputs": [
         {
           "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "intro",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "ipfsCID",
-          "type": "string"
-        },
-        {
-          "internalType": "uint256",
-          "name": "price",
-          "type": "uint256"
-        }
-      ],
-      "name": "publishBlog",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "blogId",
-          "type": "uint256"
-        },
-        {
-          "internalType": "string",
-          "name": "cid",
-          "type": "string"
-        }
-      ],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "blogId",
-          "type": "uint256"
-        }
-      ],
-      "name": "purchaseBlog",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
           "name": "cid",
           "type": "string"
         }
@@ -1385,31 +1132,13 @@ export const CONTRACT_ABI = [
       ],
       "stateMutability": "view",
       "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "blogId",
-          "type": "uint256"
-        }
-      ],
-      "name": "viewBlog",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "proposalId",
-          "type": "uint256"
-        }
-      ],
-      "name": "voteOnProposal",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
     }
-  ];
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {},
+  "immutableReferences": {},
+  "inputSourceName": "project/contracts/BlogAlbum.sol",
+  "buildInfoId": "solc-0_8_33-b7e5309efd8578e3318d3e247a3a479323d2be63"
+}

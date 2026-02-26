@@ -6,7 +6,7 @@
     />
 
     <div class="all-blogs-dashboard">
-      <header class="page-header">
+      <header class="page-header animate__animated animate__fadeInDown">
         <div class="title-section">
           <h2>🌐 发现 Web3 博客</h2>
           <p>探索去中心化世界里的所有声音</p>
@@ -14,7 +14,7 @@
         <button class="back-btn" @click="$emit('go-back')">返回我的空间</button>
       </header>
 
-      <main class="dash-content">
+      <main class="dash-content animate__animated animate__fadeInUp">
         <div v-if="loading" class="loading-state">
           <div class="loader"></div>
           <p>正在从区块链拉取所有博客数据...</p>
@@ -27,7 +27,7 @@
         <div v-else class="blog-grid">
           <div v-for="blog in allBlogs" :key="blog.id" class="blog-card">
             <h4>{{ blog.name }}</h4>
-            <p class="author">👤 作者: {{ formatAddress(blog.owner) }}</p>
+            <p class="author">👤 作者: {{ blog.authorDisplay }}</p>
             <p class="intro">{{ blog.intro }}</p>
             
             <div class="blog-meta">
@@ -69,37 +69,35 @@ const fetchAllBlogs = async () => {
     loading.value = true;
     const contract = getContract();
     const blogsData = [];
-    let currentId = 0;
+    
+    const totalBlogs = await contract.getBlogCount();
+    const count = Number(totalBlogs);
 
-    // 无限循环，直到遇到 "blog not exist" 报错退出
-    while (true) {
-      try {
-        const detail = await contract.getBlogDetail(currentId);
+    for (let currentId = 0; currentId < count; currentId++) {
+      const detail = await contract.getBlogDetail(currentId);
+      
+      if (!detail[7]) { // 如果没有被隐藏
         
-        // 如果博客没有被 DAO 社区隐藏，才展示出来
-        if (!detail[7]) { // detail[7] 对应返回值里的 isHidden
-          blogsData.push({
-            id: currentId.toString(),
-            owner: detail[0],
-            name: detail[1],
-            intro: detail[2],
-            ipfsCID: detail[3],
-            price: ethers.formatEther(detail[4]), // 将 wei 转为 BLG 数量
-            viewCount: detail[5].toString(),
-            publishDate: new Date(Number(detail[6]) * 1000).toLocaleString(),
-            isHidden: detail[7]
-          });
-        }
-        
-        currentId++; // 继续查找下一个 ID
-      } catch (err) {
-        // 当查询超出当前博客数量时，合约报错，退出循环
-        console.log(`遍历结束，链上共 ${currentId} 篇博客数据`);
-        break; 
+        // [新增] 拉取当前博客主人的用户名
+        const authorName = await contract.getUsername(detail[0]);
+        // 如果他有用户名就用用户名，如果没有就退化为钱包短地址
+        const displayAuthor = authorName ? authorName : formatAddress(detail[0]);
+
+        blogsData.push({
+          id: currentId.toString(),
+          owner: detail[0],
+          authorDisplay: displayAuthor, // [新增字段] 绑定到模板里
+          name: detail[1],
+          intro: detail[2],
+          ipfsCID: detail[3],
+          price: ethers.formatEther(detail[4]),
+          viewCount: detail[5].toString(),
+          publishDate: new Date(Number(detail[6]) * 1000).toLocaleString(),
+          isHidden: detail[7]
+        });
       }
     }
 
-    // 翻转数组，让最新发布的博客展示在最前面
     allBlogs.value = blogsData.reverse();
   } catch (error) {
     console.error("获取所有博客列表失败:", error);

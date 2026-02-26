@@ -1,0 +1,18 @@
+/* src/style.css */
+
+/* ... 你原有的其他全局样式 ... */
+
+/* ================= 全局入场动画 ================= */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+.animate__animated { 
+  animation-duration: 0.8s; 
+  animation-fill-mode: both; 
+}
+.animate__fadeIn { animation-name: fadeIn; }
+.animate__fadeInUp { animation-name: fadeInUp; }
+.animate__fadeInDown { animation-name: fadeInDown; }
+.animate__fadeInRight { animation-name: fadeInRight; }

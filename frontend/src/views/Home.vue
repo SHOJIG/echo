@@ -14,7 +14,7 @@
             <div class="profile-banner"></div>
             <div class="mobile-profile">
               <img class="avatar-img" :src="userAvatar" alt="avatar" />
-              <h3>{{ shortAddress }}</h3>
+              <h3>{{ username || shortAddress }}</h3>
               <p class="bio">Web3 内容创作者</p>
             </div>
           </div>
@@ -69,7 +69,7 @@
             <div class="profile-banner"></div>
             <div class="profile-header">
               <img class="avatar-img" :src="userAvatar" alt="avatar" />
-              <h3 class="wallet-address">{{ shortAddress }}</h3>
+              <h3 class="wallet-address">{{ username || shortAddress }}</h3>
               <p class="bio">Web3 内容创作者</p>
             </div>
             <div class="profile-stats">
@@ -125,6 +125,17 @@ const totalViews = computed(() => {
   return myBlogs.value.reduce((sum, blog) => sum + Number(blog.viewCount), 0);
 });
 
+const username = ref('');
+const fetchUserInfo = async () => {
+  if (!props.userAddress) return;
+  try {
+    const contract = getContract();
+    username.value = await contract.getUsername(props.userAddress);
+  } catch (error) {
+    console.error("获取用户名失败:", error);
+  }
+};
+
 const fetchMyBlogs = async () => {
   try {
     loading.value = true;
@@ -158,6 +169,7 @@ const fetchMyBlogs = async () => {
 };
 
 onMounted(() => {
+  fetchUserInfo();
   fetchMyBlogs();
 });
 </script>
@@ -239,15 +251,6 @@ onMounted(() => {
 .info-row .value { font-weight: 600; color: #303133; }
 
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-.animate__animated { animation-duration: 0.8s; animation-fill-mode: both; }
-.animate__fadeIn { animation-name: fadeIn; }
-.animate__fadeInUp { animation-name: fadeInUp; }
-.animate__fadeInDown { animation-name: fadeInDown; }
-.animate__fadeInRight { animation-name: fadeInRight; }
 
 @media (max-width: 900px) {
   .layout-container { flex-direction: column; }
