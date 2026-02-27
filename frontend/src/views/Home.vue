@@ -11,7 +11,7 @@
             <div class="profile-banner"></div>
             <div class="mobile-profile">
               <img class="avatar-img" :src="userAvatar" alt="avatar" />
-              <h3>{{ username || shortAddress }}</h3>
+              <h3>{{ username || userAddress }}</h3>
               <p class="bio">Web3 内容创作者</p>
             </div>
           </div>
@@ -103,7 +103,7 @@
             <div class="profile-banner"></div>
             <div class="profile-header">
               <img class="avatar-img" :src="userAvatar" alt="avatar" />
-              <h3 class="wallet-address">{{ username || shortAddress }}</h3>
+              <h3 class="wallet-address">{{ username || userAddress }}</h3>
               <p class="bio">Web3 内容创作者</p>
             </div>
             <div class="profile-stats">
@@ -139,12 +139,8 @@ const props = defineProps({
 
 const router = useRouter(); 
 
-const defaultAvatar = 'https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png';
+const defaultAvatar = getIpfsUrl("bafkreihxhqdm4ixe6cwlfblkisruar2zn56rek2ybl6qliar7djizccoiq");
 const userAvatar = ref(defaultAvatar);
-
-const shortAddress = computed(() => {
-  return props.userAddress ? `${props.userAddress.slice(0, 6)}...${props.userAddress.slice(-4)}` : '';
-});
 
 const myBlogs = ref([]);
 const loading = ref(true);
@@ -154,7 +150,7 @@ const totalViews = computed(() => {
   return myBlogs.value.reduce((sum, blog) => sum + Number(blog.viewCount), 0);
 });
 
-// ================= [新增] 分页相关逻辑 =================
+// ================= 分页相关逻辑 =================
 const currentPage = ref(1);
 const pageSize = 6; 
 
@@ -188,7 +184,7 @@ const fetchUserInfo = async () => {
       userAvatar.value = getIpfsUrl(avatarCid);
     }
   } catch (error) {
-    username.value = props.userAddress;
+    username.value = props.userAddress; // 就算获取失败，也会自动降级展示钱包全地址
     userAvatar.value = defaultAvatar;
     console.error("获取用户资料失败:", error);
   }
@@ -198,30 +194,38 @@ const goToDetail = (blogId) => {
   router.push(`/blog/${blogId}`);
 };
 
-// ================= [新增] 编辑与删除功能入口 =================
 const handleEdit = (blog) => {
-  // 如果前端有对应的编辑路由，可以使用 router.push(`/edit/${blog.id}`);
-  alert(`📝 你点击了编辑《${blog.name}》。\n\n注：当前智能合约缺少更新接口，若要将修改同步至链上，需升级智能合约增加 updateBlog 功能。`);
+  router.push({
+    path: '/publish',
+    query: {
+      editMode: 'true',
+      blogId: blog.id,
+      name: blog.name,
+      intro: blog.intro,
+      ipfsCID: blog.ipfsCID,
+      price: blog.price
+    }
+  });
 };
 
-const handleDelete = (blog) => {
-  const confirmDelete = confirm(`确定要删除文章《${blog.name}》吗？\n警告：删除后将不可恢复。`);
-  if (confirmDelete) {
-    alert(`🗑️ 你点击了删除。\n\n注：区块链数据不可篡改，当前合约未提供作者自行删除(隐藏)文章的接口。若需实现该功能，需在合约中新增 ownerDelete 方法。`);
-    // 未来合约有删除接口时的参考代码：
-    /*
-    try {
-       const contract = getContract();
-       const tx = await contract.deleteBlog(blog.id);
-       await tx.wait();
-       fetchMyBlogs(); // 重新拉取列表
-    } catch(err) {
-       console.error("删除失败", err);
-    }
-    */
+const handleDelete = async (blog) => {
+  const confirmDelete = confirm(`确定要删除文章《${blog.name}》吗？\n警告：删除后文章将被隐藏，且无法恢复。`);
+  if (!confirmDelete) return;
+  
+  try {
+    loading.value = true;
+    const contract = getContract();
+    const tx = await contract.deleteBlog(blog.id);
+    await tx.wait(); // 等待交易打包上链
+    alert("删除成功！");
+    fetchMyBlogs(); // 重新拉取列表
+  } catch(err) {
+    console.error("删除失败", err);
+    alert(`删除失败: ${err.reason || err.message}`);
+  } finally {
+    loading.value = false;
   }
 };
-// ==========================================================
 
 const fetchMyBlogs = async () => {
   try {
@@ -234,7 +238,10 @@ const fetchMyBlogs = async () => {
       const id = blogIds[i];
       const detail = await contract.getBlogDetail(id);
       
-      // 作者空间可以查看自己所有的文章，包括被 DAO 隐藏的，但可以在 UI 上做区分
+      if (detail[7]) {
+        continue;
+      }
+      
       blogsData.push({
         id: id.toString(),
         owner: detail[0],
@@ -264,55 +271,26 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.dashboard-page {
-  min-height: 100vh;
-  background-color: #f8fafc; 
-}
-
-/* 内容区域样式 */
-.home_center_box {
-  max-width: 1200px;
-  margin: 30px auto; 
-  padding: 0 20px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #333;
-}
-
+.dashboard-page { min-height: 100vh; background-color: #f8fafc; }
+.home_center_box { max-width: 1200px; margin: 30px auto; padding: 0 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; }
 .layout-container { display: flex; gap: 20px; align-items: flex-start; }
 .left-content { flex: 3; display: flex; flex-direction: column; gap: 20px; }
 .right-sidebar { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 300px;}
 
-.card {
-  background: #ffffff;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
-  color: #303133;
-  transition: all 0.3s ease;
-}
-.card-hover:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
-}
+.card { background: #ffffff; border: 1px solid #e4e7ed; border-radius: 8px; box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.05); overflow: hidden; color: #303133; transition: all 0.3s ease; }
+.card-hover:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); transform: translateY(-2px); }
 .card-inner-padding { padding: 20px; }
 .card-title { margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #ebeef5; font-size: 1.1rem; }
 
 .profile-card { text-align: center; }
-.profile-banner {
-  width: 100%;
-  height: 12rem; 
-  background-image: url('https://img-1325177803.cos.ap-nanjing.myqcloud.com/blog/11.jpg');
-  background-size: cover;
-  background-position: center;
-}
-.profile-header, .mobile-profile {
-  position: relative;
-  margin-top: -45px;
-  padding: 0 20px 20px;
-}
+.profile-banner { width: 100%; height: 12rem; background-image: url('https://img-1325177803.cos.ap-nanjing.myqcloud.com/blog/11.jpg'); background-size: cover; background-position: center; }
+.profile-header, .mobile-profile { position: relative; margin-top: -45px; padding: 0 20px 20px; }
 .avatar-img { width: 90px; height: 90px; border-radius: 50%; border: 4px solid #fff; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); object-fit: cover; margin: 0 auto 10px; display: block; }
-.wallet-address { margin: 0 0 5px 0; font-size: 1.2rem; color: #1e293b; }
+
+/* 调整钱包地址溢出换行，以防全地址太长破坏布局 */
+.wallet-address { margin: 0 0 5px 0; font-size: 1rem; color: #1e293b; word-break: break-all; }
+.mobile-profile h3 { word-break: break-all; font-size: 1rem; }
+
 .bio { color: #909399; font-size: 0.9rem; margin-bottom: 20px; }
 .profile-stats { display: flex; justify-content: space-around; border-top: 1px solid #ebeef5; padding: 20px 0; }
 .stat-item { display: flex; flex-direction: column; gap: 5px; }
@@ -323,55 +301,14 @@ onMounted(() => {
 .article-list { display: flex; flex-direction: column; gap: 15px; }
 .article-card { padding: 20px; }
 
-/* ================= [新增] 标题头部排版及按钮样式 ================= */
-.article-header-row { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: flex-start; 
-  margin-bottom: 10px; 
-}
-.article-title { 
-  margin: 0; 
-  font-size: 1.25rem; 
-  color: #1e293b; 
-  cursor: pointer; 
-  transition: color 0.2s; 
-  flex: 1; 
-  padding-right: 15px;
-}
+.article-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.article-title { margin: 0; font-size: 1.25rem; color: #1e293b; cursor: pointer; transition: color 0.2s; flex: 1; padding-right: 15px; }
 .article-title:hover { color: #6366f1; }
-
-.article-actions { 
-  display: flex; 
-  align-items: center; 
-  gap: 16px; 
-  flex-shrink: 0; 
-  margin-top: 4px; /* 微调与标题的垂直对齐 */
-}
-
-.action-edit { 
-  color: #94a3b8; 
-  font-size: 0.85rem; 
-  text-decoration: underline; 
-  cursor: pointer; 
-  transition: color 0.2s ease;
-}
+.article-actions { display: flex; align-items: center; gap: 16px; flex-shrink: 0; margin-top: 4px; }
+.action-edit { color: #94a3b8; font-size: 0.85rem; text-decoration: underline; cursor: pointer; transition: color 0.2s ease; }
 .action-edit:hover { color: #64748b; }
-
-.action-delete { 
-  color: #ef4444; 
-  font-size: 1.6rem; 
-  font-weight: 900; 
-  cursor: pointer; 
-  line-height: 0.5; /* 避免减号把整个行高撑起 */
-  transition: transform 0.2s ease, color 0.2s ease;
-  user-select: none;
-}
-.action-delete:hover { 
-  transform: scale(1.2); 
-  color: #b91c1c; 
-}
-/* ============================================================= */
+.action-delete { color: #ef4444; font-size: 1.6rem; font-weight: 900; cursor: pointer; line-height: 0.5; transition: transform 0.2s ease, color 0.2s ease; user-select: none; }
+.action-delete:hover { transform: scale(1.2); color: #b91c1c; }
 
 .article-intro { color: #606266; font-size: 0.95rem; line-height: 1.6; margin-bottom: 15px; }
 .article-meta { display: flex; gap: 15px; font-size: 0.85rem; color: #909399; align-items: center; flex-wrap: wrap;}
@@ -395,7 +332,6 @@ onMounted(() => {
 .page-btn:disabled { background: #f4f4f5; color: #c0c4cc; border-color: #e4e7ed; cursor: not-allowed; }
 
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
 @media (max-width: 900px) {
   .layout-container { flex-direction: column; }
   .right-sidebar { display: none; }

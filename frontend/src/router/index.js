@@ -7,6 +7,7 @@ import AlbumListView from '../views/AlbumListView.vue'
 import AlbumDetailView from '../views/AlbumDetailView.vue'
 import PublishView from '../views/PublishView.vue'
 import BlogDetailView from '../views/BlogDetailView.vue'
+import SubscribeView from '../views/SubscribeView.vue';
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -15,7 +16,8 @@ const routes = [
   { path: '/albums', name: 'Albums', component: AlbumListView },
   { path: '/albums/:id', name: 'AlbumDetail', component: AlbumDetailView },
   { path: '/publish', name: 'Publish', component: PublishView }, // 新增发布页路由
-  { path: '/blog/:id', name: 'BlogDetail', component: BlogDetailView }
+  { path: '/blog/:id', name: 'BlogDetail', component: BlogDetailView },
+  { path: '/subscribe', name: 'Subscribe', component: SubscribeView }
 ]
 
 const router = createRouter({

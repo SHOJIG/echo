@@ -5,14 +5,14 @@
         <a href="#" :class="{ active: route.path === '/' }" @click.prevent="$router.push('/')">博客</a>
         <a href="#" :class="{ active: route.path === '/blogs' }" @click.prevent="$router.push('/blogs')">探索</a>
         <a href="#" :class="{ active: route.path.startsWith('/albums') }" @click.prevent="$router.push('/albums')">相册</a>
-        <a href="#">订阅</a>
+        <a href="#" :class="{ active: route.path === '/subscribe' }" @click.prevent="$router.push('/subscribe')">订阅</a>
       </nav>
     </div>
 
     <div class="nav-right">
       <div class="token-container">
         <div class="token-balance" title="点击领取每日代币" @click="toggleFaucetDropdown">
-          💰 {{ tokenBalance }} BLG
+          <img :src="getIpfsUrl('bafkreibal4uvu3li6swxdmtwn7mk4ttfp2h6ysmzu2unzulnoqyd7ttsty')" alt="写博客" class="custom-icon" style="margin-right: 10px;" /> {{ tokenBalance }} BLG
         </div>
         
         <transition name="dropdown-fade">
@@ -31,8 +31,9 @@
         </transition>
       </div>
       
-      <button class="icon-btn" title="写博客" @click="$router.push('/publish')">✍️</button>
-      <button class="icon-btn" title="消息通知">🔔</button>
+      <button class="icon-btn" title="写博客" @click="$router.push('/publish')">
+        <img :src="getIpfsUrl('bafkreie52yu6kox54b7n5htub2belwd2quv43iftbrjmlgf5vx7bp7pyrq')" alt="写博客" class="custom-icon" />
+      </button>
       
       <div class="nav-avatar-container">
         <div class="nav-avatar-wrapper" @click="toggleAvatarDropdown">
@@ -42,15 +43,15 @@
         <transition name="dropdown-fade">
           <div v-show="showAvatarDropdown" class="avatar-dropdown">
             <div class="dropdown-item" @click="handleEditUsername">
-              ✏️ 修改名字
+              修改名字
             </div>
             
             <div class="dropdown-item" @click="triggerAvatarUpload">
-              🖼️ {{ isUploadingAvatar ? '上传中...' : '修改头像' }}
+              {{ isUploadingAvatar ? '上传中...' : '修改头像' }}
             </div>
             
             <div class="dropdown-item logout-item" @click="handleLogout">
-              🚪 退出登录
+              退出登录
             </div>
           </div>
         </transition>
@@ -79,7 +80,7 @@ const router = useRouter();
 const emit = defineEmits(['logout']);
 
 // 默认头像
-const defaultAvatar = 'https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png';
+const defaultAvatar = getIpfsUrl("bafkreihxhqdm4ixe6cwlfblkisruar2zn56rek2ybl6qliar7djizccoiq");
 const userAvatar = ref(defaultAvatar);
 
 
@@ -281,7 +282,7 @@ onUnmounted(() => {
 .nav-avatar-wrapper { width: 38px; height: 38px; border-radius: 50%; border: 2px solid #e4e7ed; overflow: hidden; cursor: pointer; transition: border-color 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
 .nav-avatar-wrapper:hover { border-color: #6366f1; }
 .nav-avatar { width: 100%; height: 100%; object-fit: cover; }
-.avatar-dropdown { position: absolute; top: 55px; right: 0; background: #ffffff; border: 1px solid #ebeef5; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); min-width: 140px; z-index: 100; overflow: hidden; }
+.avatar-dropdown { position: absolute; top: 55px; right: 0; background: #ffffff; border: 1px solid #ebeef5; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); min-width: 110px; z-index: 100; overflow: hidden; }
 .dropdown-item { padding: 12px 20px; font-size: 0.95rem; color: #606266; cursor: pointer; transition: background 0.2s, color 0.2s; font-weight: 500; border-bottom: 1px solid #f1f5f9; }
 .dropdown-item:last-child { border-bottom: none; }
 .dropdown-item:hover { background: #f8fafc; color: #6366f1; }
@@ -299,6 +300,8 @@ onUnmounted(() => {
 .claim-btn { width: 100%; padding: 10px 0; background: #6366f1; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
 .claim-btn:hover:not(.disabled-btn) { background: #4f46e5; }
 .disabled-btn { background: #cbd5e1 !important; color: #f8fafc !important; cursor: not-allowed; }
+
+.custom-icon { width: 24px; height: 24px; object-fit: contain; }
 
 /* ==== 动画 ==== */
 .dropdown-fade-enter-active, .dropdown-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }

@@ -5,7 +5,7 @@
     <div class="publish-page animate__animated animate__fadeIn">
       <div class="editor-container">
         <div class="header-actions">
-          <h2>📝 创作新文章</h2>
+          <h2>{{ isEditMode ? '✏️ 编辑文章' : '📝 创作新文章' }}</h2>
         </div>
 
         <div class="input-group">
@@ -17,18 +17,11 @@
 
         <div class="toolbar">
           <div class="tools-left">
-            
             <div class="emoji-container">
               <button class="tool-btn" @click.stop="toggleEmojiPicker" title="插入表情">😀</button>
-              
               <transition name="dropdown-fade">
                 <div v-show="showEmojiPicker" class="emoji-picker" @click.stop>
-                  <span 
-                    v-for="emoji in emojiList" 
-                    :key="emoji" 
-                    class="emoji-item"
-                    @click="insertEmoji(emoji)"
-                  >
+                  <span v-for="emoji in emojiList" :key="emoji" class="emoji-item" @click="insertEmoji(emoji)">
                     {{ emoji }}
                   </span>
                 </div>
@@ -44,12 +37,7 @@
             <button class="tool-btn" @click="applyFormat('*', '*')" v-show="isMarkdown" title="斜体"><i>I</i></button>
             <div class="divider" v-show="isMarkdown"></div>
             
-            <button 
-              class="tool-btn preview-btn" 
-              :class="{ 'active-preview': showPreview }"
-              @click="togglePreview" 
-              v-show="isMarkdown"
-            >
+            <button class="tool-btn preview-btn" :class="{ 'active-preview': showPreview }" @click="togglePreview" v-show="isMarkdown">
               {{ showPreview ? '🚫 关闭预览' : '👀 实时预览' }}
             </button>
           </div>
@@ -62,13 +50,7 @@
           </div>
         </div>
 
-        <input 
-          type="file" 
-          ref="imageInput" 
-          style="display: none;" 
-          accept="image/*" 
-          @change="handleImageUpload" 
-        />
+        <input type="file" ref="imageInput" style="display: none;" accept="image/*" @change="handleImageUpload" />
 
         <div class="editor-area" :class="{ 'split-mode': showPreview && isMarkdown }">
           <textarea 
@@ -80,20 +62,21 @@
             @keydown="handleKeydown" 
           ></textarea>
 
-          <div 
-            v-show="showPreview && isMarkdown" 
-            class="markdown-preview"
-            v-html="compiledMarkdown"
-          ></div>
+          <div v-show="showPreview && isMarkdown" class="markdown-preview" v-html="compiledMarkdown"></div>
         </div>
 
         <div class="publish-footer">
-          <div class="price-setting">
+          <div class="price-setting" v-if="!isEditMode">
             <label>阅读价格 (BLG) 💰 :</label>
             <input v-model="form.price" type="number" min="0" step="1" />
           </div>
+          <div v-else class="price-setting">
+            <span style="font-size: 0.9rem; color: #94a3b8;">* 链上文章价格设定后不可更改</span>
+          </div>
+          
           <button class="publish-btn" :disabled="loading" @click="publishArticle">
-            {{ loading ? '上链中 (请稍候)...' : '🚀 确认发布' }}
+            <template v-if="loading">上链中 (请稍候)...</template>
+            <template v-else>{{ isEditMode ? '💾 保存修改' : '🚀 确认发布' }}</template>
           </button>
         </div>
       </div>
@@ -102,22 +85,28 @@
 </template>
 
 <script setup>
-// 修改点 2：引入了 onMounted 和 onUnmounted 用于处理全局点击事件
 import { reactive, ref, computed, nextTick, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ethers } from 'ethers';
 import { getContract } from '../utils/web3';
 import { getIpfsUrl } from '../utils/ipfs'; 
 import TopNavbar from '../components/TopNavbar.vue'; 
 import { marked } from 'marked'; 
 
+const route = useRoute();
 const router = useRouter();
+
 const loading = ref(false);
 const isMarkdown = ref(true); 
 const showPreview = ref(false); 
 const contentInput = ref(null);
 const imageInput = ref(null);
 const isUploadingImage = ref(false);
+
+// =========== [新增] 编辑模式状态 ===========
+const isEditMode = ref(false);
+const editBlogId = ref(null);
+// ==========================================
 
 const form = reactive({
   name: '',
@@ -126,24 +115,20 @@ const form = reactive({
   price: 0
 });
 
-// 计算属性：将 Markdown 文本实时编译为 HTML
 const compiledMarkdown = computed(() => {
   if (!form.content) return '<p class="empty-preview">预览区：输入 Markdown 即可查看效果</p>';
   return marked.parse(form.content);
 });
 
-// 切换编辑器模式
 const toggleEditorMode = () => {
   isMarkdown.value = !isMarkdown.value;
   if (!isMarkdown.value) showPreview.value = false;
 };
 
-// 切换预览开关
 const togglePreview = () => {
   showPreview.value = !showPreview.value;
 };
 
-// 插入文本到光标位置
 const insertText = (text) => {
   const textarea = contentInput.value;
   if (!textarea) return;
@@ -158,7 +143,6 @@ const insertText = (text) => {
   });
 };
 
-// --- 修改点 3：表情面板逻辑 ---
 const showEmojiPicker = ref(false);
 const emojiList = [
   '😀','😂','🤣','😊','😍','😘','😜','😎','🤩','🥳',
@@ -174,23 +158,48 @@ const toggleEmojiPicker = () => {
 
 const insertEmoji = (emoji) => {
   insertText(emoji);
-  showEmojiPicker.value = false; // 选完自动关闭
+  showEmojiPicker.value = false; 
 };
 
 const closeDropdowns = () => {
   showEmojiPicker.value = false;
 };
 
-// 点击页面其他区域自动关闭弹窗
-onMounted(() => {
+// ======= [新增] 初始化时判断是否为编辑模式 =======
+onMounted(async () => {
   document.addEventListener('click', closeDropdowns);
+
+  // 如果路由携带 editMode 参数，则进入编辑模式自动回填内容
+  if (route.query.editMode === 'true') {
+    isEditMode.value = true;
+    editBlogId.value = route.query.blogId;
+    form.name = route.query.name;
+    form.intro = route.query.intro;
+    
+    // 从 IPFS 拉取旧的文章正文
+    loading.value = true;
+    form.content = "正在从 IPFS 拉取文章正文，请稍候...";
+    try {
+      const fileUrl = getIpfsUrl(route.query.ipfsCID);
+      const response = await fetch(fileUrl);
+      if (response.ok) {
+        form.content = await response.text();
+      } else {
+        form.content = "> ⚠️ 获取文章内容失败。可能是 IPFS 网关延迟，请重试。";
+      }
+    } catch(e) {
+      console.error("拉取 IPFS 失败", e);
+      form.content = "> ⚠️ 网络错误导致拉取文章正文失败。";
+    } finally {
+      loading.value = false;
+    }
+  }
 });
+// ===============================================
 
 onUnmounted(() => {
   document.removeEventListener('click', closeDropdowns);
 });
-// -----------------------------
-
 
 const applyFormat = (prefix, suffix) => {
   const textarea = contentInput.value;
@@ -207,7 +216,6 @@ const applyFormat = (prefix, suffix) => {
   nextTick(() => {
     textarea.focus();
     if (selectedText.length > 0) {
-      // 修复：如果之前有选中文字，光标移到这串文本的最后
       textarea.selectionStart = textarea.selectionEnd = start + newText.length;
     } else {
       textarea.selectionStart = start + prefix.length;
@@ -218,16 +226,9 @@ const applyFormat = (prefix, suffix) => {
 
 const handleKeydown = (e) => {
   const isModifierPressed = e.ctrlKey || e.metaKey;
-
   if (isModifierPressed && isMarkdown.value) {
-    if (e.key.toLowerCase() === 'b') {
-      e.preventDefault();
-      applyFormat('**', '**');
-    }
-    else if (e.key.toLowerCase() === 'i') {
-      e.preventDefault();
-      applyFormat('*', '*');
-    }
+    if (e.key.toLowerCase() === 'b') { e.preventDefault(); applyFormat('**', '**'); }
+    else if (e.key.toLowerCase() === 'i') { e.preventDefault(); applyFormat('*', '*'); }
   }
 };
 
@@ -246,7 +247,7 @@ const handleImageUpload = async (event) => {
     formData.append('file', file);
     formData.append('pinataMetadata', JSON.stringify({ name: `BlogImage_${Date.now()}` }));
 
-    const pinataJwt = import.meta.env.VITE_PINATA_JWT;
+    const pinataJwt = import.meta.env.VITE_PINata_JWT;
     const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${pinataJwt}` },
@@ -255,7 +256,6 @@ const handleImageUpload = async (event) => {
 
     if (!res.ok) throw new Error("图片上传到 Pinata 失败");
     const resData = await res.json();
-    
     const imageUrl = getIpfsUrl(resData.IpfsHash);
 
     if (isMarkdown.value) {
@@ -293,6 +293,7 @@ const uploadContentToIPFS = async (content) => {
   return resData.IpfsHash; 
 };
 
+// ======= [修改] 发布或更新文章 =======
 const publishArticle = async () => {
   if (!form.name || !form.content) {
     return alert("⚠️ 标题和正文内容不能为空！");
@@ -300,27 +301,39 @@ const publishArticle = async () => {
 
   try {
     loading.value = true;
+    // 将最新的内容上传到 IPFS 生成新的 CID
     const contentCID = await uploadContentToIPFS(form.content);
-    
     const contract = getContract();
-    const priceInWei = ethers.parseEther(form.price.toString());
     
-    const tx = await contract.publishBlog(
-      form.name, 
-      form.intro || "暂无简介", 
-      contentCID, 
-      priceInWei
-    );
+    let tx;
+    if (isEditMode.value) {
+      // 编辑模式：调用合约的 updateBlog
+      tx = await contract.updateBlog(
+        editBlogId.value,
+        form.name,
+        form.intro || "暂无简介",
+        contentCID
+      );
+    } else {
+      // 发布模式：调用 publishBlog
+      const priceInWei = ethers.parseEther(form.price.toString());
+      tx = await contract.publishBlog(
+        form.name, 
+        form.intro || "暂无简介", 
+        contentCID, 
+        priceInWei
+      );
+    }
     
     alert("上链请求已发送，请在 MetaMask 中确认并等待...");
     await tx.wait();
     
-    alert("🎉 发布成功！你的文章已永久记录在区块链上！");
+    alert(isEditMode.value ? "🎉 修改成功！您的修改已记录上链！" : "🎉 发布成功！你的文章已永久记录在区块链上！");
     router.push('/'); 
     
   } catch (error) {
-    console.error("发布失败:", error);
-    alert("发布失败，请检查控制台报错（是否未连接钱包？）。");
+    console.error("提交失败:", error);
+    alert(`操作失败: ${error.reason || error.message}`);
   } finally {
     loading.value = false;
   }
@@ -347,94 +360,24 @@ const publishArticle = async () => {
 .mode-toggle-btn { background: #4f46e5; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
 .mode-toggle-btn:hover { background: #4338ca; }
 
-/* === 修改点 4：表情选择器悬浮面板样式 === */
-.emoji-container {
-  position: relative;
-  display: flex;
-}
-.emoji-picker {
-  position: absolute;
-  top: 42px; /* 距离按钮底部 */
-  left: 0;
-  width: 520px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  padding: 12px;
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 6px;
-  z-index: 100;
-}
-.emoji-item {
-  text-align: center;
-  cursor: pointer;
-  font-size: 1.25rem;
-  padding: 4px;
-  border-radius: 6px;
-  transition: background 0.2s, transform 0.2s;
-  user-select: none; 
-}
-.emoji-item:hover {
-  background: #f1f5f9;
-  transform: scale(1.2); 
-}
+.emoji-container { position: relative; display: flex; }
+.emoji-picker { position: absolute; top: 42px; left: 0; width: 520px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); padding: 12px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; z-index: 100; }
+.emoji-item { text-align: center; cursor: pointer; font-size: 1.25rem; padding: 4px; border-radius: 6px; transition: background 0.2s, transform 0.2s; user-select: none; }
+.emoji-item:hover { background: #f1f5f9; transform: scale(1.2); }
 .dropdown-fade-enter-active, .dropdown-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
 .dropdown-fade-enter-from, .dropdown-fade-leave-to { opacity: 0; transform: translateY(-10px); }
-/* ===================================== */
 
-.editor-area { 
-  flex-grow: 1; 
-  display: flex; 
-  height: 600px; 
-  border: 1px solid #e2e8f0; 
-  border-radius: 0 0 8px 8px;
-  overflow: hidden; 
-}
-
-.content-textarea { 
-  width: 100%; 
-  height: 100%; 
-  resize: none; 
-  padding: 20px; 
-  border: none;
-  font-size: 1.05rem; 
-  line-height: 1.6; 
-  color: #334155; 
-  box-sizing: border-box; 
-  outline: none;
-  overflow-y: auto; 
-}
-
+.editor-area { flex-grow: 1; display: flex; height: 600px; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; overflow: hidden; }
+.content-textarea { width: 100%; height: 100%; resize: none; padding: 20px; border: none; font-size: 1.05rem; line-height: 1.6; color: #334155; box-sizing: border-box; outline: none; overflow-y: auto; }
 .markdown-font { font-family: 'Courier New', Courier, monospace; background-color: #fafaf9; }
-
-.split-mode .content-textarea { 
-  width: 50%; 
-  border-right: 1px solid #e2e8f0; 
-}
-
-.markdown-preview {
-  width: 50%;
-  height: 100%;
-  padding: 20px;
-  background: #ffffff;
-  overflow-y: auto; 
-  box-sizing: border-box;
-  color: #1e293b;
-  line-height: 1.7;
-}
-
+.split-mode .content-textarea { width: 50%; border-right: 1px solid #e2e8f0; }
+.markdown-preview { width: 50%; height: 100%; padding: 20px; background: #ffffff; overflow-y: auto; box-sizing: border-box; color: #1e293b; line-height: 1.7; }
 .empty-preview { color: #94a3b8; text-align: center; margin-top: 50px; }
 
-.content-textarea::-webkit-scrollbar,
-.markdown-preview::-webkit-scrollbar { width: 8px; }
-.content-textarea::-webkit-scrollbar-track,
-.markdown-preview::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
-.content-textarea::-webkit-scrollbar-thumb,
-.markdown-preview::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-.content-textarea::-webkit-scrollbar-thumb:hover,
-.markdown-preview::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.content-textarea::-webkit-scrollbar, .markdown-preview::-webkit-scrollbar { width: 8px; }
+.content-textarea::-webkit-scrollbar-track, .markdown-preview::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
+.content-textarea::-webkit-scrollbar-thumb, .markdown-preview::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.content-textarea::-webkit-scrollbar-thumb:hover, .markdown-preview::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 .markdown-preview :deep(img) { max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 10px 0; }
 .markdown-preview :deep(h1), .markdown-preview :deep(h2), .markdown-preview :deep(h3) { margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }

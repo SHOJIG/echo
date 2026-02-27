@@ -8,7 +8,19 @@
           <h2>🌐 发现 Web3 博客</h2>
           <p>探索去中心化世界里的所有声音</p>
         </div>
-        <button class="back-btn" @click="$emit('go-back')">返回我的空间</button>
+        
+        <div class="header-actions">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="搜索或使用 title: 和 author:" 
+              class="search-input"
+            />
+          </div>
+          <button class="back-btn" @click="$emit('go-back')">返回我的空间</button>
+        </div>
       </header>
 
       <main class="dash-content animate__animated animate__fadeInUp">
@@ -21,6 +33,10 @@
           目前还没有任何人发布博客哦，快去发布第一篇吧！
         </div>
 
+        <div v-else-if="filteredBlogs.length === 0" class="empty-state">
+          未找到与 "<span style="color: #6366f1;">{{ searchQuery }}</span>" 相关的博客。
+        </div>
+
         <div v-else>
           <div class="masonry-layout">
             <div class="masonry-column" v-for="(column, colIndex) in masonryColumns" :key="colIndex">
@@ -28,7 +44,7 @@
               <div v-for="blog in column" :key="blog.id" class="blog-card">
                 <h4 @click="handleAction(blog)" class="clickable-title">{{ blog.name }}</h4>
                 
-                <div class="author-info">
+                <div class="author-info clickable-author" @click="searchByAuthor(blog.authorDisplay)" title="搜索该作者的所有文章">
                   <img 
                     class="author-avatar" 
                     :src="blog.authorAvatar ? getIpfsUrl(blog.authorAvatar) : defaultAvatar" 
@@ -78,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'; // 新增 onUnmounted
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { ethers } from 'ethers';
 import { useRouter } from 'vue-router';
 import { getContract } from '../utils/web3';
@@ -91,15 +107,76 @@ const router = useRouter();
 const allBlogs = ref([]);
 const loading = ref(true);
 const currentUserAddress = ref('');
-const defaultAvatar = 'https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png';
+const defaultAvatar = getIpfsUrl("bafkreihxhqdm4ixe6cwlfblkisruar2zn56rek2ybl6qliar7djizccoiq");
 
-// --- 分页逻辑 ---
+// ================= 搜索与过滤逻辑 =================
+const searchQuery = ref('');
+
+// [新增] 点击作者触发搜索的方法
+const searchByAuthor = (authorName) => {
+  searchQuery.value = `author:${authorName}`;
+  // 滚动到顶部让用户看到搜索结果的变化
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+const filteredBlogs = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return allBlogs.value;
+  }
+  
+  const query = searchQuery.value.trim().toLowerCase();
+  
+  let authorQuery = '';
+  let titleQuery = '';
+  let generalTerms = [];
+  
+  const tokens = query.split(/\s+/);
+  
+  tokens.forEach(token => {
+    if (token.startsWith('author:')) {
+      authorQuery = token.replace('author:', '');
+    } else if (token.startsWith('title:')) {
+      titleQuery = token.replace('title:', '');
+    } else {
+      generalTerms.push(token);
+    }
+  });
+  
+  const generalStr = generalTerms.join(' ');
+
+  return allBlogs.value.filter(blog => {
+    const blogName = blog.name.toLowerCase();
+    const blogAuthor = blog.authorDisplay.toLowerCase();
+    
+    let match = true;
+    
+    if (authorQuery && !blogAuthor.includes(authorQuery)) {
+      match = false;
+    }
+    
+    if (titleQuery && !blogName.includes(titleQuery)) {
+      match = false;
+    }
+    
+    if (generalStr && !blogName.includes(generalStr) && !blogAuthor.includes(generalStr)) {
+      match = false;
+    }
+    
+    return match;
+  });
+});
+
+watch(searchQuery, () => {
+  currentPage.value = 1;
+});
+// =================================================================
+
 const currentPage = ref(1);
 const pageSize = 5; 
-const totalPages = computed(() => Math.ceil(allBlogs.value.length / pageSize));
+const totalPages = computed(() => Math.ceil(filteredBlogs.value.length / pageSize));
 const paginatedBlogs = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
-  return allBlogs.value.slice(start, start + pageSize);
+  return filteredBlogs.value.slice(start, start + pageSize);
 });
 
 const changePage = (page) => {
@@ -109,17 +186,14 @@ const changePage = (page) => {
   }
 };
 
-// ================= [终极瀑布流核心逻辑] =================
-const colCount = ref(3); // 默认 3 列
+const colCount = ref(3); 
 
-// 根据屏幕宽度动态计算列数
 const updateColCount = () => {
   if (window.innerWidth <= 600) colCount.value = 1;
   else if (window.innerWidth <= 900) colCount.value = 2;
   else colCount.value = 3;
 };
 
-// 将当前页的博客像发扑克牌一样，均匀分配到各个列的数组中
 const masonryColumns = computed(() => {
   const cols = Array.from({ length: colCount.value }, () => []);
   paginatedBlogs.value.forEach((blog, index) => {
@@ -127,11 +201,10 @@ const masonryColumns = computed(() => {
   });
   return cols;
 });
-// ========================================================
 
 const formatAddress = (address) => {
   if (!address) return '';
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  return `${address.slice(0, 10)}...${address.slice(-6)}`;
 };
 
 const getCurrentUser = async () => {
@@ -160,7 +233,6 @@ const fetchAllBlogs = async () => {
         const authorAddress = detail[0];
         const authorName = await contract.getUsername(authorAddress);
         const avatarCid = await contract.getAvatar(authorAddress);
-        
         const isOwner = currentUserAddress.value && (authorAddress.toLowerCase() === currentUserAddress.value.toLowerCase());
         let hasPurchased = false;
         
@@ -218,12 +290,12 @@ const handleAction = async (blog) => {
 
 onMounted(() => {
   fetchAllBlogs();
-  updateColCount(); // 初始化列数
-  window.addEventListener('resize', updateColCount); // 监听窗口变化
+  updateColCount(); 
+  window.addEventListener('resize', updateColCount); 
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateColCount); // 销毁组件时移除监听
+  window.removeEventListener('resize', updateColCount); 
 });
 </script>
 
@@ -232,40 +304,37 @@ onUnmounted(() => {
 .page-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 30px;}
 .title-section h2 { margin-bottom: 5px; color: #1e293b; }
 .title-section p { color: #64748b; font-size: 0.9rem; }
-.back-btn { padding: 8px 16px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; }
 
-/* ---------------- 终极瀑布流样式 ---------------- */
-.masonry-layout {
-  display: flex;
-  gap: 24px;
-  align-items: flex-start; /* 关键：确保竖列不会被强行拉伸到底部 */
+.header-actions { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+.search-box { position: relative; display: flex; align-items: center; }
+.search-icon { position: absolute; left: 10px; font-size: 0.9rem; color: #94a3b8; pointer-events: none; }
+.search-input { width: 260px; padding: 8px 12px 8px 32px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; outline: none; transition: all 0.2s ease; color: #334155; }
+.search-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); width: 290px; }
+
+@media (max-width: 600px) {
+  .header-actions { width: 100%; justify-content: space-between; margin-top: 15px; }
+  .search-box { flex-grow: 1; }
+  .search-input { width: 100%; }
+  .search-input:focus { width: 100%; }
 }
 
-.masonry-column {
-  flex: 1; /* 每列平分宽度 */
-  display: flex;
-  flex-direction: column; /* 竖向排列卡片 */
-  gap: 24px; /* 卡片之间的上下间距 */
-  min-width: 0; /* 防止内容过长撑破盒子 */
-}
-/* ------------------------------------------------ */
+.back-btn { padding: 8px 16px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; transition: background 0.2s; white-space: nowrap;}
+.back-btn:hover { background: #f8fafc; }
 
-.blog-card { 
-  background: white; 
-  border: 1px solid #e2e8f0; 
-  padding: 24px; 
-  border-radius: 16px; 
-  box-shadow: 0 4px 6px rgba(0,0,0,0.02); 
-  transition: transform 0.2s, box-shadow 0.2s; 
-  display: flex; 
-  flex-direction: column;
-}
+.masonry-layout { display: flex; gap: 24px; align-items: flex-start; }
+.masonry-column { flex: 1; display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+
+.blog-card { background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; }
 .blog-card:hover { transform: translateY(-4px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
 .blog-card h4 { font-size: 1.25rem; margin-bottom: 12px; color: #0f172a; line-height: 1.4; }
 
 .author-info { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
 .author-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid #f1f5f9; }
 .author-name { font-size: 0.85rem; color: #8b5cf6; font-weight: bold; }
+
+/* [修改] 鼠标悬浮在作者栏时的交互样式（仅下划线和变色） */
+.clickable-author { cursor: pointer; }
+.clickable-author:hover .author-name { color: #6366f1; text-decoration: underline; }
 
 .intro { color: #475569; font-size: 0.95rem; margin-bottom: 20px; line-height: 1.6; word-wrap: break-word; }
 .blog-meta { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 15px; padding: 10px; background: #f8fafc; border-radius: 8px; font-weight: 500;}
@@ -285,14 +354,8 @@ onUnmounted(() => {
 .loader { border: 4px solid #f3f3f3; border-top: 4px solid #6366f1; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-/* 分页样式 */
-.pagination { 
-  display: flex; justify-content: center; gap: 8px; margin-top: 40px; flex-wrap: wrap;
-}
-.page-btn { 
-  padding: 8px 16px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; 
-  cursor: pointer; color: #475569; font-weight: 500; transition: all 0.2s ease; 
-}
+.pagination { display: flex; justify-content: center; gap: 8px; margin-top: 40px; flex-wrap: wrap; }
+.page-btn { padding: 8px 16px; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; cursor: pointer; color: #475569; font-weight: 500; transition: all 0.2s ease; }
 .page-btn:hover:not(:disabled) { border-color: #6366f1; color: #6366f1; }
 .page-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
 .page-btn:disabled { background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0; cursor: not-allowed; }
