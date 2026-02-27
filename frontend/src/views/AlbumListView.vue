@@ -1,6 +1,6 @@
 <template>
   <div>
-    <TopNavbar @logout="$emit('logout')" />
+    <TopNavbar/>
     
     <div class="album-page-container animate__animated animate__fadeInUp">
       <header class="album-header">

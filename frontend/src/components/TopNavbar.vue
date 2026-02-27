@@ -235,6 +235,7 @@ const handleClaimTokens = async () => {
 const handleLogout = () => {
   closeAllDropdowns();
   emit('logout'); 
+  router.push('/index');
 };
 
 const handleEditUsername = async () => {

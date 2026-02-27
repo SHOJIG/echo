@@ -316,7 +316,7 @@ const publishArticle = async () => {
     await tx.wait();
     
     alert("🎉 发布成功！你的文章已永久记录在区块链上！");
-    router.push('/blogs'); 
+    router.push('/'); 
     
   } catch (error) {
     console.error("发布失败:", error);

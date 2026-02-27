@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-page">
     
-    <TopNavbar />
+    <TopNavbar/>
 
     <div class="home_center_box">
       <div class="layout-container">
@@ -30,17 +30,46 @@
             </div>
 
             <div v-else class="article-list">
-              <div v-for="blog in myBlogs" :key="blog.id" class="article-card card card-hover">
+              <div v-for="blog in paginatedBlogs" :key="blog.id" class="article-card card card-hover">
                 <div class="article-content">
-                  <h4 class="article-title">{{ blog.name }}</h4>
+                  <h4 class="article-title" @click="goToDetail(blog.id)">{{ blog.name }}</h4>
                   <p class="article-intro">{{ blog.intro }}</p>
                   <div class="article-meta">
                     <span class="meta-item">👁️ 浏览: {{ blog.viewCount }}</span>
                     <span class="meta-item">💰 价格: {{ blog.price }} BLG</span>
-                    <span class="meta-item time">📅 {{ new Date(Number(blog.publishDate) * 1000).toLocaleString() }}</span>
+                    <span class="meta-item time">发表于 {{ new Date(Number(blog.publishDate) * 1000).toLocaleString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) }}</span>
                   </div>
                 </div>
               </div>
+
+              <div class="pagination" v-if="totalPages > 1">
+                <button 
+                  class="page-btn" 
+                  :disabled="currentPage === 1" 
+                  @click="changePage(currentPage - 1)"
+                >
+                  上一页
+                </button>
+                
+                <button 
+                  v-for="page in totalPages" 
+                  :key="page"
+                  class="page-btn" 
+                  :class="{ active: currentPage === page }"
+                  @click="changePage(page)"
+                >
+                  {{ page }}
+                </button>
+                
+                <button 
+                  class="page-btn" 
+                  :disabled="currentPage === totalPages" 
+                  @click="changePage(currentPage + 1)"
+                >
+                  下一页
+                </button>
+              </div>
+
             </div>
           </div>
 
@@ -91,17 +120,17 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { ethers } from 'ethers';
+import { useRouter } from 'vue-router'; 
 import { getContract } from '../utils/web3';
-import TopNavbar from '../components/TopNavbar.vue'; // 引入刚才抽离的导航栏组件
+import TopNavbar from '../components/TopNavbar.vue';
 import { getIpfsUrl } from '../utils/ipfs';
 
 const props = defineProps({
   userAddress: String
 });
 
-const emit = defineEmits(['logout', 'go-to-explore']);
+const router = useRouter(); 
 
-// 保留此处的头像，因为中间的主体卡片依然需要展示头像
 const defaultAvatar = 'https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png';
 const userAvatar = ref(defaultAvatar);
 
@@ -117,15 +146,39 @@ const totalViews = computed(() => {
   return myBlogs.value.reduce((sum, blog) => sum + Number(blog.viewCount), 0);
 });
 
+// ================= [新增] 分页相关逻辑 =================
+const currentPage = ref(1);
+const pageSize = 6; // 每页显示 10 篇文章
+
+// 计算总页数
+const totalPages = computed(() => {
+  return Math.ceil(myBlogs.value.length / pageSize);
+});
+
+// 计算当前页应该显示的文章 (对 myBlogs 数组进行切片)
+const paginatedBlogs = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  const end = start + pageSize;
+  return myBlogs.value.slice(start, end);
+});
+
+// 翻页操作
+const changePage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+    // 翻页后平滑滚动到页面顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+};
+// ===================================================
+
 const username = ref('');
 const fetchUserInfo = async () => {
   if (!props.userAddress) return;
   try {
     const contract = getContract();
-    // 拉取名字
     username.value = await contract.getUsername(props.userAddress);
     
-    // 拉取头像
     const avatarCid = await contract.getAvatar(props.userAddress);
     if (avatarCid) {
       userAvatar.value = getIpfsUrl(avatarCid);
@@ -135,6 +188,10 @@ const fetchUserInfo = async () => {
     userAvatar.value = defaultAvatar;
     console.error("获取用户资料失败:", error);
   }
+};
+
+const goToDetail = (blogId) => {
+  router.push(`/blog/${blogId}`);
 };
 
 const fetchMyBlogs = async () => {
@@ -162,6 +219,7 @@ const fetchMyBlogs = async () => {
     }
     
     myBlogs.value = blogsData.reverse();
+    currentPage.value = 1; // [新增] 数据拉取完成后，重置为第一页
   } catch (error) {
     console.error("获取博客列表失败:", error);
   } finally {
@@ -181,7 +239,7 @@ onMounted(() => {
   background-color: #f8fafc; 
 }
 
-/* ================= 内容区域样式 ================= */
+/* 内容区域样式 */
 .home_center_box {
   max-width: 1200px;
   margin: 30px auto; 
@@ -250,6 +308,40 @@ onMounted(() => {
 .mobile-profile { text-align: center; }
 .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.95rem; color: #606266; }
 .info-row .value { font-weight: 600; color: #303133; }
+
+/* ================= [新增] 分页样式 ================= */
+.pagination { 
+  display: flex; 
+  justify-content: center; 
+  gap: 8px; 
+  margin-top: 30px; 
+  flex-wrap: wrap;
+}
+.page-btn { 
+  padding: 8px 14px; 
+  border: 1px solid #e4e7ed; 
+  background: #fff; 
+  border-radius: 6px; 
+  cursor: pointer; 
+  color: #606266; 
+  font-weight: 500;
+  transition: all 0.2s ease; 
+}
+.page-btn:hover:not(:disabled) { 
+  border-color: #6366f1; 
+  color: #6366f1; 
+}
+.page-btn.active { 
+  background: #6366f1; 
+  color: #fff; 
+  border-color: #6366f1; 
+}
+.page-btn:disabled { 
+  background: #f4f4f5; 
+  color: #c0c4cc; 
+  border-color: #e4e7ed;
+  cursor: not-allowed; 
+}
 
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
