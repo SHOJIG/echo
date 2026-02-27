@@ -47,6 +47,7 @@
 import { ref, onMounted } from 'vue';
 import { getContract } from '../utils/web3';
 import TopNavbar from '../components/TopNavbar.vue';
+import { getIpfsUrl } from '../utils/ipfs';
 
 // 接收 App.vue 传来的当前钱包地址
 const props = defineProps({
@@ -56,8 +57,6 @@ const props = defineProps({
 const albums = ref([]);
 const loading = ref(true);
 
-// IPFS 网关前缀拼接
-const getIpfsUrl = (cid) => `https://beige-accepted-amphibian-264.mypinata.cloud/ipfs/${cid}`;
 
 const fetchAlbums = async () => {
   if (!props.userAddress) return;

@@ -56,6 +56,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { getContract } from '../utils/web3';
 import TopNavbar from '../components/TopNavbar.vue';
+import { getIpfsUrl } from '../utils/ipfs';
 
 const route = useRoute();
 const albumId = route.params.id; 
@@ -67,8 +68,6 @@ const pictures = ref([]);
 const fileInput = ref(null);
 // 上传状态
 const isUploading = ref(false);
-
-const getIpfsUrl = (cid) => `https://beige-accepted-amphibian-264.mypinata.cloud/ipfs/${cid}`;
 
 const fetchAlbumDetail = async () => {
   try {

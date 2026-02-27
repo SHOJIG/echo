@@ -31,7 +31,7 @@
         </transition>
       </div>
       
-      <button class="icon-btn" title="写博客">✍️</button>
+      <button class="icon-btn" title="写博客" @click="$router.push('/publish')">✍️</button>
       <button class="icon-btn" title="消息通知">🔔</button>
       
       <div class="nav-avatar-container">
@@ -72,6 +72,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getContract } from '../utils/web3'; 
 import { ethers } from 'ethers'; 
+import { getIpfsUrl } from '../utils/ipfs';
 
 const route = useRoute();
 const router = useRouter();
@@ -81,8 +82,6 @@ const emit = defineEmits(['logout']);
 const defaultAvatar = 'https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png';
 const userAvatar = ref(defaultAvatar);
 
-// IPFS 网关前缀（请根据你上一步的选择，替换为你自己的专属网关或公共网关）
-const getIpfsUrl = (cid) => `https://gateway.pinata.cloud/ipfs/${cid}`;
 
 // --- 下拉菜单状态控制 ---
 const showAvatarDropdown = ref(false);

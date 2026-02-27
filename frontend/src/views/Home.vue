@@ -1,10 +1,7 @@
 <template>
   <div class="dashboard-page">
     
-    <TopNavbar 
-      @go-to-explore="$emit('go-to-explore')" 
-      @logout="$emit('logout')" 
-    />
+    <TopNavbar />
 
     <div class="home_center_box">
       <div class="layout-container">
@@ -84,12 +81,6 @@
             </div>
           </div>
 
-          <div class="card publish-card card-hover">
-            <div class="card-inner-padding">
-              <h4 class="card-title">✍️ 创作中心</h4>
-              <PublishBlog @published="fetchMyBlogs" />
-            </div>
-          </div>
         </div>
         
       </div>
@@ -101,8 +92,8 @@
 import { ref, onMounted, computed } from 'vue';
 import { ethers } from 'ethers';
 import { getContract } from '../utils/web3';
-import PublishBlog from '../components/PublishBlog.vue';
 import TopNavbar from '../components/TopNavbar.vue'; // 引入刚才抽离的导航栏组件
+import { getIpfsUrl } from '../utils/ipfs';
 
 const props = defineProps({
   userAddress: String
@@ -110,7 +101,6 @@ const props = defineProps({
 
 const emit = defineEmits(['logout', 'go-to-explore']);
 
-const getIpfsUrl = (cid) => `https://beige-accepted-amphibian-264.mypinata.cloud/ipfs/${cid}`;
 // 保留此处的头像，因为中间的主体卡片依然需要展示头像
 const defaultAvatar = 'https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png';
 const userAvatar = ref(defaultAvatar);

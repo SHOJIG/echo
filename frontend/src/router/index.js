@@ -5,33 +5,15 @@ import LandingView from '../views/LandingView.vue'
 import BlogListView from '../views/BlogListView.vue'
 import AlbumListView from '../views/AlbumListView.vue'
 import AlbumDetailView from '../views/AlbumDetailView.vue'
+import PublishView from '../views/PublishView.vue'
 
 const routes = [
-  { 
-    path: '/', 
-    name: 'Home', 
-    component: Home 
-  },
-  { 
-    path: '/index', 
-    name: 'Index', 
-    component: LandingView 
-  },
-  { 
-    path: '/blogs', 
-    name: 'Blogs', 
-    component: BlogListView 
-  },
-  { 
-    path: '/albums', 
-    name: 'Albums', 
-    component: AlbumListView 
-  },
-  { 
-    path: '/albums/:id', 
-    name: 'AlbumDetail', 
-    component: AlbumDetailView 
-  }
+  { path: '/', name: 'Home', component: Home },
+  { path: '/index', name: 'Index', component: LandingView },
+  { path: '/blogs', name: 'Blogs', component: BlogListView },
+  { path: '/albums', name: 'Albums', component: AlbumListView },
+  { path: '/albums/:id', name: 'AlbumDetail', component: AlbumDetailView },
+  { path: '/publish', name: 'Publish', component: PublishView } // 新增发布页路由
 ]
 
 const router = createRouter({
