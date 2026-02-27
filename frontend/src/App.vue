@@ -16,63 +16,57 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router'; // 引入路由相关的方法
+import { useRouter, useRoute } from 'vue-router';
 import { checkConnection } from './utils/web3'; 
 
-const router = useRouter(); // 用于执行跳转，如 router.push()
-const route = useRoute();   // 用于获取当前 URL 信息
+const router = useRouter();
+const route = useRoute();
 
 const isLoggedIn = ref(false);
 const currentUser = ref('');
 const isChecking = ref(true); 
 
-// 组件挂载时，自动检查 MetaMask 状态
 onMounted(async () => {
   const address = await checkConnection();
   
   if (address) {
-    // 已经连接过钱包
     currentUser.value = address;
     isLoggedIn.value = true;
-    
-    // 如果当前在登录页，自动跳回首页
+
     if (route.path === '/index') {
       router.push('/');
     }
   } else {
-    // 未登录，强制跳转到登录页
     if (route.path !== '/index') {
       router.push('/index');
     }
   }
-  
-  // 检查完毕，关闭过渡动画
   isChecking.value = false;
 });
 
 const handleLogin = (address) => {
   currentUser.value = address;
   isLoggedIn.value = true;
-  router.push('/'); // 登录成功后跳转到首页
+  router.push('/');
 };
 
 const handleLogout = () => {
   isLoggedIn.value = false;
   currentUser.value = '';
-  router.push('/index'); // 退出登录后跳转到登录页
+  router.push('/index');
 };
 
 const goToBlogs = () => {
-  router.push('/blogs'); // 导航到博客列表页
+  router.push('/blogs');
 };
 
 const goToHome = () => {
-  router.push('/'); // 导航回首页
+  router.push('/');
 };
 </script>
 
 <style>
-/* CSS 保持你原来的不变即可 */
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc; color: #0f172a; }
 

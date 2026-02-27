@@ -1,7 +1,4 @@
-// 合约地址
 export const CONTRACT_ADDRESS = "0x67d269191c92Caf3cD7723F116c85e6E9bf55933";
-
-// 提取你合约中需要用到的核心 ABI (这里做了精简，实际可以直接把 Remix 里的 ABI 完整复制过来)
 export const CONTRACT_ABI = [
     {
       "inputs": [

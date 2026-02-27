@@ -11,8 +11,8 @@
       <div class="overlay"></div> </div>
 
     <div class="center-content">
-      <h1 class="title">Web3 去中心化博客</h1>
-      <p class="subtitle">掌控你的数据主权，内容永久上链</p>
+      <h1 class="title">Share Blog</h1>
+      <p class="subtitle">你的去中心化博客</p>
       
       <button class="enter-btn" @click="handleEnter" :disabled="isConnecting">
         {{ isConnecting ? '连接中...' : '开始探索' }}
@@ -23,16 +23,13 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { initWeb3 } from '../utils/web3'; // 引入我们之前写的连接钱包工具
-
-// 定义向父组件 (App.vue) 传递的事件
+import { initWeb3 } from '../utils/web3';
 const emit = defineEmits(['login-success']);
 
 const isConnecting = ref(false);
 
-// 轮播图逻辑
 const images = [
-  'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2832&auto=format&fit=crop', // 炫酷的区块链风格图
+  'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2832&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1642104704074-907c0698cbd9?q=80&w=2832&auto=format&fit=crop',
   'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop'
 ];
@@ -40,7 +37,6 @@ const currentIndex = ref(0);
 let timer = null;
 
 onMounted(() => {
-  // 每 4 秒自动切换下一张图
   timer = setInterval(() => {
     currentIndex.value = (currentIndex.value + 1) % images.length;
   }, 4000);
@@ -49,14 +45,11 @@ onMounted(() => {
 onUnmounted(() => {
   clearInterval(timer);
 });
-
-// 点击进入按钮，唤起 MetaMask
 const handleEnter = async () => {
   try {
     isConnecting.value = true;
     const { signer } = await initWeb3();
     const address = await signer.getAddress();
-    // 连接成功，告诉 App.vue 切换页面，并把地址传过去
     emit('login-success', address);
   } catch (error) {
     console.error("连接钱包失败", error);
@@ -97,7 +90,7 @@ const handleEnter = async () => {
 .overlay {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.6); /* 调暗背景 */
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .center-content {

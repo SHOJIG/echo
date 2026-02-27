@@ -17,8 +17,7 @@
         
         <transition name="dropdown-fade">
           <div v-show="showFaucetDropdown" class="faucet-dropdown">
-            <div class="faucet-header">每日空投福利</div>
-            <p class="faucet-desc">每 24 小时可免费领取 100 BLG</p>
+            <div class="faucet-header">每日福利</div>
             <button 
               class="claim-btn" 
               :class="{ 'disabled-btn': !canClaimTokens }"
@@ -79,12 +78,8 @@ const route = useRoute();
 const router = useRouter();
 const emit = defineEmits(['logout']);
 
-// 默认头像
 const defaultAvatar = getIpfsUrl("bafkreihxhqdm4ixe6cwlfblkisruar2zn56rek2ybl6qliar7djizccoiq");
 const userAvatar = ref(defaultAvatar);
-
-
-// --- 下拉菜单状态控制 ---
 const showAvatarDropdown = ref(false);
 const showFaucetDropdown = ref(false);
 
@@ -104,14 +99,12 @@ const toggleFaucetDropdown = (e) => {
   showAvatarDropdown.value = false;
   e.stopPropagation();
 };
-
-// --- 头像上传逻辑 ---
 const avatarInput = ref(null);
 const isUploadingAvatar = ref(false);
 
 const triggerAvatarUpload = () => {
   if (isUploadingAvatar.value) return;
-  avatarInput.value.click(); // 触发隐藏的 file input
+  avatarInput.value.click();
 };
 
 const handleAvatarUpload = async (event) => {
@@ -119,10 +112,9 @@ const handleAvatarUpload = async (event) => {
   if (!file) return;
 
   isUploadingAvatar.value = true;
-  closeAllDropdowns(); // 开始上传时关闭下拉菜单
+  closeAllDropdowns();
 
   try {
-    // 1. 上传到 Pinata IPFS
     const formData = new FormData();
     formData.append('file', file);
     formData.append('pinataMetadata', JSON.stringify({ name: 'UserAvatar' }));
@@ -137,8 +129,6 @@ const handleAvatarUpload = async (event) => {
     if (!res.ok) throw new Error("上传到 Pinata 失败");
     const resData = await res.json();
     const ipfsCID = resData.IpfsHash;
-
-    // 2. 将 CID 存入区块链智能合约
     const contract = getContract();
     const tx = await contract.setAvatar(ipfsCID);
     
@@ -146,19 +136,16 @@ const handleAvatarUpload = async (event) => {
     await tx.wait(); 
     
     alert("头像修改成功！");
-    window.location.reload(); // 刷新页面同步最新头像
+    window.location.reload();
 
   } catch (e) {
     console.error("修改头像失败:", e);
     alert("上传或上链失败，请查看控制台日志。");
   } finally {
     isUploadingAvatar.value = false;
-    if (avatarInput.value) avatarInput.value.value = ''; // 清空选择
+    if (avatarInput.value) avatarInput.value.value = ''
   }
 };
-
-
-// --- 余额、水龙头、数据拉取逻辑 ---
 const tokenBalance = ref('0.00');
 const canClaimTokens = ref(false);
 const isClaiming = ref(false);
@@ -168,18 +155,16 @@ const checkFaucetStatus = async (address, contract) => {
   try {
     const lastTime = await contract.lastFaucetTime(address);
     const lastTimeMs = Number(lastTime) * 1000;
-    const cooldownMs = 24 * 60 * 60 * 1000;
-    const nowMs = Date.now();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayStartMs = todayStart.getTime();
 
-    if (lastTimeMs === 0 || nowMs >= lastTimeMs + cooldownMs) {
+    if (lastTimeMs === 0 || lastTimeMs < todayStartMs) {
       canClaimTokens.value = true;
-      claimBtnText.value = '🎁 立即领取 (100 BLG)';
+      claimBtnText.value = '立即领取';
     } else {
       canClaimTokens.value = false;
-      const nextTime = new Date(lastTimeMs + cooldownMs);
-      const hours = nextTime.getHours().toString().padStart(2, '0');
-      const minutes = nextTime.getMinutes().toString().padStart(2, '0');
-      claimBtnText.value = `冷却中 (明早 ${hours}:${minutes} 可领)`;
+      claimBtnText.value = '今日已领';
     }
   } catch (e) {
     console.error("检查水龙头状态失败:", e);
@@ -187,7 +172,6 @@ const checkFaucetStatus = async (address, contract) => {
   }
 };
 
-// [修改] 统一拉取用户数据 (余额、水龙头状态、头像)
 const fetchUserData = async () => {
   try {
     if (window.ethereum) {
@@ -195,18 +179,14 @@ const fetchUserData = async () => {
       const signer = await provider.getSigner();
       const address = await signer.getAddress();
       const contract = getContract();
-      
-      // 1. 获取余额
+
       const rawBalance = await contract.balanceOf(address);
       tokenBalance.value = Number(ethers.formatEther(rawBalance)).toFixed(2);
 
-      // 2. 获取链上头像 CID
       const avatarCid = await contract.getAvatar(address);
       if (avatarCid) {
         userAvatar.value = getIpfsUrl(avatarCid);
       }
-
-      // 3. 检查领取状态
       await checkFaucetStatus(address, contract);
     }
   } catch (error) {
@@ -222,7 +202,7 @@ const handleClaimTokens = async () => {
     const tx = await contract.claimTokens();
     alert("正在向区块链发送领取请求，请等待区块确认...");
     await tx.wait(); 
-    alert("🎉 领取成功！100 BLG 已发放至您的钱包。");
+    alert("领取成功！100 BLG 已发放至您的钱包。");
     await fetchUserData(); 
     closeAllDropdowns();
   } catch(e) {
@@ -257,7 +237,7 @@ const handleEditUsername = async () => {
 
 onMounted(() => {
   document.addEventListener('click', closeAllDropdowns);
-  fetchUserData(); // 页面加载时拉取数据
+  fetchUserData();
 });
 
 onUnmounted(() => {
@@ -266,7 +246,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ====== 这里的 CSS 和上一步完全一样，保持你之前的代码即可 ====== */
+
 .top-navbar { display: flex; justify-content: space-between; align-items: center; padding: 0 40px; height: 60px; background: #ffffff; border-radius: 0; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08); width: 100%; box-sizing: border-box; position: relative; z-index: 100; }
 .nav-left { display: flex; align-items: center; gap: 30px; }
 .nav-links { display: flex; gap: 25px; }
@@ -277,7 +257,6 @@ onUnmounted(() => {
 .icon-btn { background: none; border: none; font-size: 1.3rem; cursor: pointer; transition: transform 0.2s; outline: none; padding: 5px; display: flex; align-items: center; justify-content: center;}
 .icon-btn:hover { transform: scale(1.15); }
 
-/* ==== 头像下拉菜单 ==== */
 .nav-avatar-container { position: relative; display: flex; align-items: center; }
 .nav-avatar-wrapper { width: 38px; height: 38px; border-radius: 50%; border: 2px solid #e4e7ed; overflow: hidden; cursor: pointer; transition: border-color 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
 .nav-avatar-wrapper:hover { border-color: #6366f1; }
@@ -289,21 +268,18 @@ onUnmounted(() => {
 .logout-item { color: #ef4444; }
 .logout-item:hover { background: #fef2f2; color: #dc2626; }
 
-/* ==== 代币与水龙头样式 ==== */
 .token-container { position: relative; }
 .token-balance { background: #eef2ff; color: #4f46e5; padding: 6px 16px; border-radius: 20px; font-size: 0.95rem; font-weight: bold; display: flex; align-items: center; border: 1px solid #c7d2fe; cursor: pointer; transition: all 0.2s; user-select: none; }
 .token-balance:hover { background: #e0e7ff; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2); }
 
-.faucet-dropdown { position: absolute; top: 45px; right: 0; width: 220px; background: #ffffff; border: 1px solid #ebeef5; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); padding: 15px; z-index: 100; text-align: center; }
+.faucet-dropdown { position: absolute; top: 45px; right: 0; width: 150px; background: #ffffff; border: 1px solid #ebeef5; border-radius: 12px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); padding: 15px; z-index: 100; text-align: center; }
 .faucet-header { font-weight: bold; color: #1e293b; font-size: 1rem; margin-bottom: 5px; }
-.faucet-desc { font-size: 0.8rem; color: #64748b; margin-bottom: 15px; }
 .claim-btn { width: 100%; padding: 10px 0; background: #6366f1; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
 .claim-btn:hover:not(.disabled-btn) { background: #4f46e5; }
 .disabled-btn { background: #cbd5e1 !important; color: #f8fafc !important; cursor: not-allowed; }
 
 .custom-icon { width: 24px; height: 24px; object-fit: contain; }
 
-/* ==== 动画 ==== */
 .dropdown-fade-enter-active, .dropdown-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
 .dropdown-fade-enter-from, .dropdown-fade-leave-to { opacity: 0; transform: translateY(-10px); }
 

@@ -72,8 +72,6 @@ const albumId = route.params.id;
 const albumName = ref('加载中...');
 const pictures = ref([]);
 const loading = ref(true);
-
-// 隐藏的 input 的引用
 const fileInput = ref(null);
 const isUploading = ref(false);
 
@@ -82,8 +80,7 @@ const fetchAlbumDetail = async () => {
     loading.value = true;
     const contract = getContract();
     const info = await contract.albums(albumId);
-    
-    // 如果相册已被删除，拦截并退回
+
     if (info.isDeleted) {
       alert("该相册已被删除！");
       router.push('/albums');
@@ -91,11 +88,8 @@ const fetchAlbumDetail = async () => {
     }
     
     albumName.value = info.name;
-    
-    // 获取包含所有状态的图片结构体数组
     const rawPics = await contract.getAlbumPictures(albumId);
-    
-    // 【核心逻辑】：保留原始索引（因为合约按原数组索引删除），并过滤掉已被隐藏的图片
+
     pictures.value = rawPics
       .map((pic, index) => ({
         originalIndex: index,
@@ -111,7 +105,6 @@ const fetchAlbumDetail = async () => {
   }
 };
 
-// ================= 相册自身的编辑与删除 =================
 const handleEditAlbum = async () => {
   const newName = prompt("请输入新的相册名称：", albumName.value);
   if (!newName || newName.trim() === "" || newName === albumName.value) return;
@@ -137,13 +130,12 @@ const handleDeleteAlbum = async () => {
     const tx = await contract.deleteAlbum(albumId);
     await tx.wait();
     alert("相册删除成功！");
-    router.push('/albums'); // 删除后跳回列表
+    router.push('/albums');
   } catch(e) {
     console.error("删除失败", e);
     alert("删除失败，详情请看控制台报错。");
   }
 };
-// =======================================================
 
 const triggerFileInput = () => {
   if (isUploading.value) return; 
@@ -219,7 +211,6 @@ onMounted(() => {
 .back-btn { padding: 6px 12px; background: white; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
 .back-btn:hover { background: #f1f5f9; }
 
-/* 头部相册标题与操作按钮排版 */
 .album-title-area { display: flex; align-items: center; gap: 15px; flex: 1; }
 .album-title-area h2 { margin: 0; color: #1e293b; }
 .album-actions { display: flex; align-items: center; gap: 12px; }

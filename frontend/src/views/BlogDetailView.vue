@@ -128,22 +128,17 @@ const renderedContent = ref('');
 const contentRef = ref(null);
 
 const defaultAvatar = 'https://images.cnblogs.com/cnblogs_com/blogs/784559/galleries/2387286/o_240325050905_tx.png';
-
-// 评论相关状态
 const comments = ref([]);
 const commentsLoading = ref(true);
 const newComment = ref('');
 const isSubmittingComment = ref(false);
 
 const currentUserAddress = ref('');
-
-// 目录与滚动相关
 const toc = ref([]);
 const activeHeading = ref('');
 const isTocFixed = ref(false);
 const showBackToTop = ref(false);
 
-// =========== 工具函数 ===========
 const formatAddress = (addr) => {
   if (!addr) return '';
   if (addr.startsWith('0x') && addr.length > 20) {
@@ -170,7 +165,6 @@ const getCurrentUser = async () => {
   }
 };
 
-// =========== 获取文章详情 ===========
 const fetchBlogDetail = async () => {
   loading.value = true;
   try {
@@ -210,15 +204,10 @@ const fetchBlogDetail = async () => {
 
     const rawHtml = marked.parse(blog.value.content);
     renderedContent.value = DOMPurify.sanitize(rawHtml);
-
-    // 记录访问量（只在非只读情况下且尚未访问过时调用）
     try {
       if(currentUserAddress.value){
         const hasViewed = await contract.hasViewed(currentUserAddress.value, blogId);
         if(!hasViewed){
-          // 发起交易增加浏览量
-          // const tx = await contract.viewBlog(blogId);
-          // await tx.wait();
         }
       }
     } catch(e) {}
@@ -226,8 +215,6 @@ const fetchBlogDetail = async () => {
     loading.value = false;
     await nextTick();
     generateToc();
-
-    // 文章加载完后，开始加载评论
     fetchComments();
 
   } catch (error) {
@@ -237,7 +224,6 @@ const fetchBlogDetail = async () => {
   } 
 };
 
-// =========== 获取评论列表 ===========
 const fetchComments = async () => {
   commentsLoading.value = true;
   try {
@@ -274,8 +260,6 @@ const fetchComments = async () => {
     commentsLoading.value = false;
   }
 };
-
-// =========== 提交评论 ===========
 const submitComment = async () => {
   if (!newComment.value.trim() || isSubmittingComment.value) return;
   
@@ -299,8 +283,6 @@ const submitComment = async () => {
     isSubmittingComment.value = false;
   }
 };
-
-// =========== 目录与滚动 ===========
 const generateToc = () => {
   if (!contentRef.value) return;
   const headings = contentRef.value.querySelectorAll('h1, h2, h3, h4, h5, h6');
@@ -371,7 +353,6 @@ onUnmounted(() => {
 .author-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid #f1f5f9; }
 .meta-item { display: flex; align-items: center; }
 
-/* ============ 评论区样式 ============ */
 .comments-section { margin-top: 4rem; padding-top: 2rem; border-top: 2px dashed #e2e8f0; }
 .comments-section h3 { font-size: 1.4rem; color: #1e293b; margin-bottom: 1.5rem; }
 

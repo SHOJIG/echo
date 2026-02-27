@@ -1,13 +1,7 @@
-/* src/style.css */
-
-/* ... 你原有的其他全局样式 ... */
-
-/* ================= 全局入场动画 ================= */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-/* 1. 从 Google Fonts 引入思源黑体 (你也可以换成自己喜欢的字体 URL) */
 @import url('https://cdn.staticfile.org/lxgw-wenkai-screen-webfont/1.7.0/style.css');
 
 body {
@@ -16,7 +10,6 @@ body {
 textarea, 
 .editor-input-area,
 .markdown-body {
-  /* 恢复成适合写代码和 Markdown 的等宽字体 */
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
 }
 .animate__animated { 

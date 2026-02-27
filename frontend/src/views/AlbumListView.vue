@@ -49,7 +49,6 @@ import { getContract } from '../utils/web3';
 import TopNavbar from '../components/TopNavbar.vue';
 import { getIpfsUrl } from '../utils/ipfs';
 
-// 接收 App.vue 传来的当前钱包地址
 const props = defineProps({
   userAddress: String
 });
@@ -68,9 +67,7 @@ const fetchAlbums = async () => {
     const data = [];
     for (let i = 0; i < albumIds.length; i++) {
       const id = albumIds[i];
-      const albumInfo = await contract.albums(id); // 获取相册基本信息
-      
-      // 【新增】：过滤掉已经被标记为软删除的相册
+      const albumInfo = await contract.albums(id);
       if (albumInfo.isDeleted) {
         continue;
       }

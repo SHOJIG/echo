@@ -67,7 +67,7 @@
 
         <div class="publish-footer">
           <div class="price-setting" v-if="!isEditMode">
-            <label>阅读价格 (BLG) 💰 :</label>
+            <label>阅读价格 (BLG) :</label>
             <input v-model="form.price" type="number" min="0" step="1" />
           </div>
           <div v-else class="price-setting">
@@ -102,11 +102,8 @@ const showPreview = ref(false);
 const contentInput = ref(null);
 const imageInput = ref(null);
 const isUploadingImage = ref(false);
-
-// =========== [新增] 编辑模式状态 ===========
 const isEditMode = ref(false);
 const editBlogId = ref(null);
-// ==========================================
 
 const form = reactive({
   name: '',
@@ -165,18 +162,14 @@ const closeDropdowns = () => {
   showEmojiPicker.value = false;
 };
 
-// ======= [新增] 初始化时判断是否为编辑模式 =======
 onMounted(async () => {
   document.addEventListener('click', closeDropdowns);
 
-  // 如果路由携带 editMode 参数，则进入编辑模式自动回填内容
   if (route.query.editMode === 'true') {
     isEditMode.value = true;
     editBlogId.value = route.query.blogId;
     form.name = route.query.name;
     form.intro = route.query.intro;
-    
-    // 从 IPFS 拉取旧的文章正文
     loading.value = true;
     form.content = "正在从 IPFS 拉取文章正文，请稍候...";
     try {
@@ -195,7 +188,6 @@ onMounted(async () => {
     }
   }
 });
-// ===============================================
 
 onUnmounted(() => {
   document.removeEventListener('click', closeDropdowns);
@@ -293,7 +285,6 @@ const uploadContentToIPFS = async (content) => {
   return resData.IpfsHash; 
 };
 
-// ======= [修改] 发布或更新文章 =======
 const publishArticle = async () => {
   if (!form.name || !form.content) {
     return alert("⚠️ 标题和正文内容不能为空！");
@@ -301,13 +292,11 @@ const publishArticle = async () => {
 
   try {
     loading.value = true;
-    // 将最新的内容上传到 IPFS 生成新的 CID
     const contentCID = await uploadContentToIPFS(form.content);
     const contract = getContract();
     
     let tx;
     if (isEditMode.value) {
-      // 编辑模式：调用合约的 updateBlog
       tx = await contract.updateBlog(
         editBlogId.value,
         form.name,
@@ -315,7 +304,6 @@ const publishArticle = async () => {
         contentCID
       );
     } else {
-      // 发布模式：调用 publishBlog
       const priceInWei = ethers.parseEther(form.price.toString());
       tx = await contract.publishBlog(
         form.name, 

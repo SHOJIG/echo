@@ -12,7 +12,7 @@
             <div class="mobile-profile">
               <img class="avatar-img" :src="userAvatar" alt="avatar" />
               <h3>{{ username || userAddress }}</h3>
-              <p class="bio">Web3 内容创作者</p>
+              <p class="bio">内容创作者</p>
             </div>
           </div>
 
@@ -104,7 +104,7 @@
             <div class="profile-header">
               <img class="avatar-img" :src="userAvatar" alt="avatar" />
               <h3 class="wallet-address">{{ username || userAddress }}</h3>
-              <p class="bio">Web3 内容创作者</p>
+              <p class="bio">内容创作者</p>
             </div>
             <div class="profile-stats">
               <div class="stat-item">
@@ -150,7 +150,6 @@ const totalViews = computed(() => {
   return myBlogs.value.reduce((sum, blog) => sum + Number(blog.viewCount), 0);
 });
 
-// ================= 分页相关逻辑 =================
 const currentPage = ref(1);
 const pageSize = 6; 
 
@@ -170,7 +169,6 @@ const changePage = (page) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 };
-// ===================================================
 
 const username = ref('');
 const fetchUserInfo = async () => {
@@ -184,7 +182,7 @@ const fetchUserInfo = async () => {
       userAvatar.value = getIpfsUrl(avatarCid);
     }
   } catch (error) {
-    username.value = props.userAddress; // 就算获取失败，也会自动降级展示钱包全地址
+    username.value = props.userAddress;
     userAvatar.value = defaultAvatar;
     console.error("获取用户资料失败:", error);
   }
@@ -216,9 +214,9 @@ const handleDelete = async (blog) => {
     loading.value = true;
     const contract = getContract();
     const tx = await contract.deleteBlog(blog.id);
-    await tx.wait(); // 等待交易打包上链
+    await tx.wait();
     alert("删除成功！");
-    fetchMyBlogs(); // 重新拉取列表
+    fetchMyBlogs();
   } catch(err) {
     console.error("删除失败", err);
     alert(`删除失败: ${err.reason || err.message}`);
@@ -286,8 +284,6 @@ onMounted(() => {
 .profile-banner { width: 100%; height: 12rem; background-image: url('https://img-1325177803.cos.ap-nanjing.myqcloud.com/blog/11.jpg'); background-size: cover; background-position: center; }
 .profile-header, .mobile-profile { position: relative; margin-top: -45px; padding: 0 20px 20px; }
 .avatar-img { width: 90px; height: 90px; border-radius: 50%; border: 4px solid #fff; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); object-fit: cover; margin: 0 auto 10px; display: block; }
-
-/* 调整钱包地址溢出换行，以防全地址太长破坏布局 */
 .wallet-address { margin: 0 0 5px 0; font-size: 1rem; color: #1e293b; word-break: break-all; }
 .mobile-profile h3 { word-break: break-all; font-size: 1rem; }
 

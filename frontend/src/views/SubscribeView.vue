@@ -6,7 +6,7 @@
       <header class="page-header">
         <div class="title-section">
           <h2>📚 我的订阅</h2>
-          <p>这里是你所有购买/订阅的 Web3 精彩内容</p>
+          <p>这里是你所有购买/订阅的精彩内容</p>
         </div>
         <button class="back-btn" @click="$router.push('/')">返回首页</button>
       </header>
@@ -102,10 +102,8 @@ const defaultAvatar = getIpfsUrl("bafkreihxhqdm4ixe6cwlfblkisruar2zn56rek2ybl6ql
 const allBlogs = ref([]);
 const loading = ref(true);
 const currentUserAddress = ref('');
-
-// ================= 分页相关逻辑 =================
 const currentPage = ref(1);
-const pageSize = 10; // 规定每页 10 个
+const pageSize = 10;
 
 const totalPages = computed(() => {
   return Math.ceil(allBlogs.value.length / pageSize);
@@ -123,7 +121,6 @@ const changePage = (page) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 };
-// ===================================================
 
 const formatAddress = (address) => {
   if (!address) return '';
@@ -135,30 +132,23 @@ const goToDetail = (blogId) => {
 };
 
 const searchByAuthor = (authorName) => {
-  // 如果你想支持点击作者去探索页搜索，可以跳过去并带参
   router.push({ path: '/blogs', query: { search: `author:${authorName}` } });
 };
 
 const fetchPurchasedBlogs = async () => {
   try {
     loading.value = true;
-    
-    // 获取当前用户钱包地址
     const provider = new ethers.BrowserProvider(window.ethereum);
     const signer = await provider.getSigner();
     currentUserAddress.value = await signer.getAddress();
 
     const contract = getContract();
-    
-    // 获取用户订阅（购买）的所有博客 ID 数组
     const blogIds = await contract.getUserPurchasedBlogs(currentUserAddress.value);
     
     const blogsData = [];
     for (let i = 0; i < blogIds.length; i++) {
       const id = blogIds[i];
       const detail = await contract.getBlogDetail(id);
-      
-      // 如果博客已被原作者或 DAO 删除/隐藏，则跳过不展示
       if (detail[7]) {
         continue;
       }
@@ -181,8 +171,6 @@ const fetchPurchasedBlogs = async () => {
         isHidden: detail[7]
       });
     }
-    
-    // 倒序展示，最新订阅的在最前
     allBlogs.value = blogsData.reverse();
     currentPage.value = 1; 
   } catch (error) {
@@ -199,7 +187,7 @@ onMounted(() => {
 
 <style scoped>
 .dashboard-page { min-height: 100vh; background-color: #f8fafc; }
-.home_center_box { max-width: 1000px; /* 调整为适合单行展示的宽度 */ margin: 30px auto; padding: 0 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; }
+.home_center_box { max-width: 1000px; margin: 30px auto; padding: 0 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; }
 
 .page-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; margin-bottom: 30px;}
 .title-section h2 { margin-bottom: 5px; color: #1e293b; font-size: 1.8rem; }
@@ -223,7 +211,6 @@ onMounted(() => {
 .read-btn { background: #6366f1; color: white; border: none; padding: 6px 16px; border-radius: 6px; font-size: 0.9rem; cursor: pointer; transition: background 0.2s; flex-shrink: 0;}
 .read-btn:hover { background: #4f46e5; }
 
-/* 结合自 BlogListView 的作者栏样式 */
 .author-info { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
 .author-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid #f1f5f9; }
 .author-name { font-size: 0.9rem; color: #8b5cf6; font-weight: bold; }

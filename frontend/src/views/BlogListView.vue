@@ -5,8 +5,8 @@
     <div class="all-blogs-dashboard">
       <header class="page-header animate__animated animate__fadeInDown">
         <div class="title-section">
-          <h2>🌐 发现 Web3 博客</h2>
-          <p>探索去中心化世界里的所有声音</p>
+          <h2>🌐 发现博客</h2>
+          <p>探索新世界</p>
         </div>
         
         <div class="header-actions">
@@ -15,7 +15,7 @@
             <input 
               v-model="searchQuery" 
               type="text" 
-              placeholder="搜索或使用 title: 和 author:" 
+              placeholder="搜索" 
               class="search-input"
             />
           </div>
@@ -108,14 +108,10 @@ const allBlogs = ref([]);
 const loading = ref(true);
 const currentUserAddress = ref('');
 const defaultAvatar = getIpfsUrl("bafkreihxhqdm4ixe6cwlfblkisruar2zn56rek2ybl6qliar7djizccoiq");
-
-// ================= 搜索与过滤逻辑 =================
 const searchQuery = ref('');
 
-// [新增] 点击作者触发搜索的方法
 const searchByAuthor = (authorName) => {
   searchQuery.value = `author:${authorName}`;
-  // 滚动到顶部让用户看到搜索结果的变化
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
@@ -169,7 +165,6 @@ const filteredBlogs = computed(() => {
 watch(searchQuery, () => {
   currentPage.value = 1;
 });
-// =================================================================
 
 const currentPage = ref(1);
 const pageSize = 5; 
@@ -332,7 +327,6 @@ onUnmounted(() => {
 .author-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; border: 1px solid #f1f5f9; }
 .author-name { font-size: 0.85rem; color: #8b5cf6; font-weight: bold; }
 
-/* [修改] 鼠标悬浮在作者栏时的交互样式（仅下划线和变色） */
 .clickable-author { cursor: pointer; }
 .clickable-author:hover .author-name { color: #6366f1; text-decoration: underline; }
 
