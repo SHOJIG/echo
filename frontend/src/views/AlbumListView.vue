@@ -57,7 +57,6 @@ const props = defineProps({
 const albums = ref([]);
 const loading = ref(true);
 
-
 const fetchAlbums = async () => {
   if (!props.userAddress) return;
   loading.value = true;
@@ -70,7 +69,13 @@ const fetchAlbums = async () => {
     for (let i = 0; i < albumIds.length; i++) {
       const id = albumIds[i];
       const albumInfo = await contract.albums(id); // 获取相册基本信息
-      const coverCID = await contract.getAlbumCover(id); // 获取第一张可见图片
+      
+      // 【新增】：过滤掉已经被标记为软删除的相册
+      if (albumInfo.isDeleted) {
+        continue;
+      }
+
+      const coverCID = await contract.getAlbumCover(id); 
       
       data.push({
         id: id.toString(),
@@ -78,7 +83,7 @@ const fetchAlbums = async () => {
         coverCID: coverCID
       });
     }
-    albums.value = data.reverse(); // 最新创建的在前面
+    albums.value = data.reverse(); 
   } catch (error) {
     console.error("获取相册失败:", error);
   } finally {
@@ -93,9 +98,8 @@ const handleCreateAlbum = async () => {
   try {
     const contract = getContract();
     const tx = await contract.createAlbum(name);
-    await tx.wait(); // 等待区块确认
-    alert("相册创建成功！");
-    fetchAlbums(); // 重新拉取列表
+    await tx.wait(); 
+    fetchAlbums(); 
   } catch(e) {
     console.error(e);
     alert("相册创建失败");

@@ -50,6 +50,7 @@ abstract contract BlogStorage is BlogToken {
         address owner;
         string name;
         uint256 createdAt;
+        bool isDeleted;
         Picture[] pictures;
     }
 
@@ -97,9 +98,15 @@ abstract contract BlogStorage is BlogToken {
     event Voted(uint256 indexed proposalId, address indexed voter, uint256 weight);
     event ProposalExecuted(uint256 indexed proposalId, uint256 indexed blogId, bool isHidden);
 
+    // ================= [新增] 博客编辑与删除事件 =================
+    event BlogUpdated(uint256 indexed blogId, string newName, string newIntro, string newIpfsCID);
+    event BlogDeleted(uint256 indexed blogId, address indexed owner);
+    // ============================================================
     event AvatarUpdated(address indexed user, string avatarCID);
     event UsernameUpdated(address indexed user, string newUsername); // [新增] 用户名修改事件
     event AlbumCreated(address indexed owner, uint256 indexed albumId, string name);
+    event AlbumUpdated(uint256 indexed albumId, string newName); 
+    event AlbumDeleted(uint256 indexed albumId);
     event PictureAdded(uint256 indexed albumId, uint256 pictureIndex, string ipfsCID);
     event PictureDeleted(uint256 indexed albumId, uint256 pictureIndex);
 }

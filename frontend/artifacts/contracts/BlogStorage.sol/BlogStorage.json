@@ -119,6 +119,38 @@
       "inputs": [
         {
           "indexed": true,
+          "internalType": "uint256",
+          "name": "albumId",
+          "type": "uint256"
+        }
+      ],
+      "name": "AlbumDeleted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "albumId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newName",
+          "type": "string"
+        }
+      ],
+      "name": "AlbumUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
           "internalType": "address",
           "name": "owner",
           "type": "address"
@@ -156,6 +188,25 @@
         }
       ],
       "name": "AvatarUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "blogId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "BlogDeleted",
       "type": "event"
     },
     {
@@ -212,6 +263,37 @@
         }
       ],
       "name": "BlogPurchased",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "blogId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newName",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newIntro",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newIpfsCID",
+          "type": "string"
+        }
+      ],
+      "name": "BlogUpdated",
       "type": "event"
     },
     {
@@ -528,6 +610,11 @@
           "internalType": "uint256",
           "name": "createdAt",
           "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "isDeleted",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -957,5 +1044,5 @@
   "deployedLinkReferences": {},
   "immutableReferences": {},
   "inputSourceName": "project/contracts/BlogStorage.sol",
-  "buildInfoId": "solc-0_8_33-b7e5309efd8578e3318d3e247a3a479323d2be63"
+  "buildInfoId": "solc-0_8_33-e7501668b9985088e4e53d93e47c87c7daa3f504"
 }

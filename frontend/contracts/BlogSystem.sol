@@ -31,6 +31,46 @@ contract BlogSystem is BlogDAO {
         return (blogId, ipfsCID);
     }
 
+    function updateBlog(
+        uint256 blogId,
+        string calldata newName,
+        string calldata newIntro,
+        string calldata newIpfsCID
+    ) public {
+        require(blogId < blogs.length, "Blog not exist"); // 博客必须存在
+        
+        Blog storage blog = blogs[blogId];
+        require(blog.owner == msg.sender, "Only owner can update"); // 只有作者可以修改
+        require(!isBlogHidden[blogId], "Blog is hidden or deleted"); // 已经被删除或DAO隐藏的文章不能修改
+        
+        require(bytes(newName).length > 0, "name empty");
+        require(bytes(newIpfsCID).length > 0, "ipfsCID empty");
+
+        // 更新状态
+        blog.name = newName;
+        blog.intro = newIntro;
+        blog.ipfsCID = newIpfsCID;
+
+        // 触发更新事件
+        emit BlogUpdated(blogId, newName, newIntro, newIpfsCID);
+    }
+
+    // ================= [新增] 删除(隐藏)博客 =================
+    function deleteBlog(uint256 blogId) public {
+        require(blogId < blogs.length, "Blog not exist");
+        
+        Blog storage blog = blogs[blogId];
+        require(blog.owner == msg.sender, "Only owner can delete"); // 只有作者可以删除
+        require(!isBlogHidden[blogId], "Blog is already deleted");  // 防止重复操作
+
+        // 软删除：将其状态标记为隐藏，这样前端列表就不会再拉取到了
+        isBlogHidden[blogId] = true;
+
+        // 触发删除事件
+        emit BlogDeleted(blogId, msg.sender);
+    }
+    // =========================================================
+
     function purchaseBlog(uint256 blogId) public {
         require(blogId < blogs.length, "blog not exist");
         require(!isBlogHidden[blogId], "Blog is hidden by community");

@@ -32,7 +32,15 @@
             <div v-else class="article-list">
               <div v-for="blog in paginatedBlogs" :key="blog.id" class="article-card card card-hover">
                 <div class="article-content">
-                  <h4 class="article-title" @click="goToDetail(blog.id)">{{ blog.name }}</h4>
+                  
+                  <div class="article-header-row">
+                    <h4 class="article-title" @click="goToDetail(blog.id)">{{ blog.name }}</h4>
+                    <div class="article-actions">
+                      <span class="action-edit" @click="handleEdit(blog)">编辑</span>
+                      <span class="action-delete" @click="handleDelete(blog)" title="删除文章">-</span>
+                    </div>
+                  </div>
+
                   <p class="article-intro">{{ blog.intro }}</p>
                   <div class="article-meta">
                     <span class="meta-item">👁️ 浏览: {{ blog.viewCount }}</span>
@@ -148,25 +156,21 @@ const totalViews = computed(() => {
 
 // ================= [新增] 分页相关逻辑 =================
 const currentPage = ref(1);
-const pageSize = 6; // 每页显示 10 篇文章
+const pageSize = 6; 
 
-// 计算总页数
 const totalPages = computed(() => {
   return Math.ceil(myBlogs.value.length / pageSize);
 });
 
-// 计算当前页应该显示的文章 (对 myBlogs 数组进行切片)
 const paginatedBlogs = computed(() => {
   const start = (currentPage.value - 1) * pageSize;
   const end = start + pageSize;
   return myBlogs.value.slice(start, end);
 });
 
-// 翻页操作
 const changePage = (page) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page;
-    // 翻页后平滑滚动到页面顶部
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 };
@@ -194,6 +198,31 @@ const goToDetail = (blogId) => {
   router.push(`/blog/${blogId}`);
 };
 
+// ================= [新增] 编辑与删除功能入口 =================
+const handleEdit = (blog) => {
+  // 如果前端有对应的编辑路由，可以使用 router.push(`/edit/${blog.id}`);
+  alert(`📝 你点击了编辑《${blog.name}》。\n\n注：当前智能合约缺少更新接口，若要将修改同步至链上，需升级智能合约增加 updateBlog 功能。`);
+};
+
+const handleDelete = (blog) => {
+  const confirmDelete = confirm(`确定要删除文章《${blog.name}》吗？\n警告：删除后将不可恢复。`);
+  if (confirmDelete) {
+    alert(`🗑️ 你点击了删除。\n\n注：区块链数据不可篡改，当前合约未提供作者自行删除(隐藏)文章的接口。若需实现该功能，需在合约中新增 ownerDelete 方法。`);
+    // 未来合约有删除接口时的参考代码：
+    /*
+    try {
+       const contract = getContract();
+       const tx = await contract.deleteBlog(blog.id);
+       await tx.wait();
+       fetchMyBlogs(); // 重新拉取列表
+    } catch(err) {
+       console.error("删除失败", err);
+    }
+    */
+  }
+};
+// ==========================================================
+
 const fetchMyBlogs = async () => {
   try {
     loading.value = true;
@@ -205,6 +234,7 @@ const fetchMyBlogs = async () => {
       const id = blogIds[i];
       const detail = await contract.getBlogDetail(id);
       
+      // 作者空间可以查看自己所有的文章，包括被 DAO 隐藏的，但可以在 UI 上做区分
       blogsData.push({
         id: id.toString(),
         owner: detail[0],
@@ -219,7 +249,7 @@ const fetchMyBlogs = async () => {
     }
     
     myBlogs.value = blogsData.reverse();
-    currentPage.value = 1; // [新增] 数据拉取完成后，重置为第一页
+    currentPage.value = 1; 
   } catch (error) {
     console.error("获取博客列表失败:", error);
   } finally {
@@ -292,8 +322,57 @@ onMounted(() => {
 .section-title { margin-top: 0; margin-bottom: 15px; font-size: 1.3rem; color: #1e293b; }
 .article-list { display: flex; flex-direction: column; gap: 15px; }
 .article-card { padding: 20px; }
-.article-title { margin: 0 0 10px 0; font-size: 1.25rem; color: #1e293b; cursor: pointer; transition: color 0.2s; }
+
+/* ================= [新增] 标题头部排版及按钮样式 ================= */
+.article-header-row { 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: flex-start; 
+  margin-bottom: 10px; 
+}
+.article-title { 
+  margin: 0; 
+  font-size: 1.25rem; 
+  color: #1e293b; 
+  cursor: pointer; 
+  transition: color 0.2s; 
+  flex: 1; 
+  padding-right: 15px;
+}
 .article-title:hover { color: #6366f1; }
+
+.article-actions { 
+  display: flex; 
+  align-items: center; 
+  gap: 16px; 
+  flex-shrink: 0; 
+  margin-top: 4px; /* 微调与标题的垂直对齐 */
+}
+
+.action-edit { 
+  color: #94a3b8; 
+  font-size: 0.85rem; 
+  text-decoration: underline; 
+  cursor: pointer; 
+  transition: color 0.2s ease;
+}
+.action-edit:hover { color: #64748b; }
+
+.action-delete { 
+  color: #ef4444; 
+  font-size: 1.6rem; 
+  font-weight: 900; 
+  cursor: pointer; 
+  line-height: 0.5; /* 避免减号把整个行高撑起 */
+  transition: transform 0.2s ease, color 0.2s ease;
+  user-select: none;
+}
+.action-delete:hover { 
+  transform: scale(1.2); 
+  color: #b91c1c; 
+}
+/* ============================================================= */
+
 .article-intro { color: #606266; font-size: 0.95rem; line-height: 1.6; margin-bottom: 15px; }
 .article-meta { display: flex; gap: 15px; font-size: 0.85rem; color: #909399; align-items: center; flex-wrap: wrap;}
 .meta-item { background: #f4f4f5; padding: 4px 10px; border-radius: 4px; }
@@ -309,39 +388,11 @@ onMounted(() => {
 .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.95rem; color: #606266; }
 .info-row .value { font-weight: 600; color: #303133; }
 
-/* ================= [新增] 分页样式 ================= */
-.pagination { 
-  display: flex; 
-  justify-content: center; 
-  gap: 8px; 
-  margin-top: 30px; 
-  flex-wrap: wrap;
-}
-.page-btn { 
-  padding: 8px 14px; 
-  border: 1px solid #e4e7ed; 
-  background: #fff; 
-  border-radius: 6px; 
-  cursor: pointer; 
-  color: #606266; 
-  font-weight: 500;
-  transition: all 0.2s ease; 
-}
-.page-btn:hover:not(:disabled) { 
-  border-color: #6366f1; 
-  color: #6366f1; 
-}
-.page-btn.active { 
-  background: #6366f1; 
-  color: #fff; 
-  border-color: #6366f1; 
-}
-.page-btn:disabled { 
-  background: #f4f4f5; 
-  color: #c0c4cc; 
-  border-color: #e4e7ed;
-  cursor: not-allowed; 
-}
+.pagination { display: flex; justify-content: center; gap: 8px; margin-top: 30px; flex-wrap: wrap; }
+.page-btn { padding: 8px 14px; border: 1px solid #e4e7ed; background: #fff; border-radius: 6px; cursor: pointer; color: #606266; font-weight: 500; transition: all 0.2s ease; }
+.page-btn:hover:not(:disabled) { border-color: #6366f1; color: #6366f1; }
+.page-btn.active { background: #6366f1; color: #fff; border-color: #6366f1; }
+.page-btn:disabled { background: #f4f4f5; color: #c0c4cc; border-color: #e4e7ed; cursor: not-allowed; }
 
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 

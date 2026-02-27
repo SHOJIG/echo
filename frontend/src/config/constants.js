@@ -1,5 +1,5 @@
 // 合约地址
-export const CONTRACT_ADDRESS = "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318";
+export const CONTRACT_ADDRESS = "0x67d269191c92Caf3cD7723F116c85e6E9bf55933";
 
 // 提取你合约中需要用到的核心 ABI (这里做了精简，实际可以直接把 Remix 里的 ABI 完整复制过来)
 export const CONTRACT_ABI = [
@@ -119,6 +119,38 @@ export const CONTRACT_ABI = [
       "inputs": [
         {
           "indexed": true,
+          "internalType": "uint256",
+          "name": "albumId",
+          "type": "uint256"
+        }
+      ],
+      "name": "AlbumDeleted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "albumId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newName",
+          "type": "string"
+        }
+      ],
+      "name": "AlbumUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
           "internalType": "address",
           "name": "owner",
           "type": "address"
@@ -156,6 +188,25 @@ export const CONTRACT_ABI = [
         }
       ],
       "name": "AvatarUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "blogId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "BlogDeleted",
       "type": "event"
     },
     {
@@ -212,6 +263,37 @@ export const CONTRACT_ABI = [
         }
       ],
       "name": "BlogPurchased",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "blogId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newName",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newIntro",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "newIpfsCID",
+          "type": "string"
+        }
+      ],
+      "name": "BlogUpdated",
       "type": "event"
     },
     {
@@ -570,6 +652,11 @@ export const CONTRACT_ABI = [
           "internalType": "uint256",
           "name": "createdAt",
           "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "isDeleted",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -759,6 +846,32 @@ export const CONTRACT_ABI = [
           "internalType": "uint256",
           "name": "albumId",
           "type": "uint256"
+        }
+      ],
+      "name": "deleteAlbum",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "blogId",
+          "type": "uint256"
+        }
+      ],
+      "name": "deleteBlog",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "albumId",
+          "type": "uint256"
         },
         {
           "internalType": "uint256",
@@ -811,12 +924,29 @@ export const CONTRACT_ABI = [
           "type": "uint256"
         }
       ],
-      "name": "getAlbumVisiblePictures",
+      "name": "getAlbumPictures",
       "outputs": [
         {
-          "internalType": "string[]",
+          "components": [
+            {
+              "internalType": "string",
+              "name": "ipfsCID",
+              "type": "string"
+            },
+            {
+              "internalType": "bool",
+              "name": "isDeleted",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint256",
+              "name": "addedAt",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct BlogStorage.Picture[]",
           "name": "",
-          "type": "string[]"
+          "type": "tuple[]"
         }
       ],
       "stateMutability": "view",
@@ -1359,6 +1489,52 @@ export const CONTRACT_ABI = [
           "type": "bool"
         }
       ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "albumId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "newName",
+          "type": "string"
+        }
+      ],
+      "name": "updateAlbum",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "blogId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "newName",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "newIntro",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "newIpfsCID",
+          "type": "string"
+        }
+      ],
+      "name": "updateBlog",
+      "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
     },

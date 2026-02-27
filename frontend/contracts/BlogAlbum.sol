@@ -52,6 +52,30 @@ abstract contract BlogAlbum is BlogStorage {
         return albumId;
     }
 
+    function updateAlbum(uint256 albumId, string calldata newName) public {
+        require(albumId < albums.length, "Album does not exist");
+        Album storage album = albums[albumId];
+        
+        require(album.owner == msg.sender, "Only owner can update");
+        require(!album.isDeleted, "Album is deleted");
+        require(bytes(newName).length > 0, "Name cannot be empty");
+
+        album.name = newName;
+        emit AlbumUpdated(albumId, newName);
+    }
+
+    // ================= [新增] 删除(隐藏)相册 =================
+    function deleteAlbum(uint256 albumId) public {
+        require(albumId < albums.length, "Album does not exist");
+        Album storage album = albums[albumId];
+        
+        require(album.owner == msg.sender, "Only owner can delete");
+        require(!album.isDeleted, "Album is already deleted");
+
+        album.isDeleted = true;
+        emit AlbumDeleted(albumId);
+    }
+
     function addPicture(uint256 albumId, string calldata ipfsCID) public {
         require(albumId < albums.length, "Album does not exist");
         require(bytes(ipfsCID).length > 0, "Image CID cannot be empty");
@@ -91,26 +115,9 @@ abstract contract BlogAlbum is BlogStorage {
         return ""; 
     }
 
-    function getAlbumVisiblePictures(uint256 albumId) public view returns (string[] memory) {
+    function getAlbumPictures(uint256 albumId) public view returns (Picture[] memory) {
         require(albumId < albums.length, "Album does not exist");
-        Album storage album = albums[albumId];
-
-        uint256 visibleCount = 0;
-        for (uint256 i = 0; i < album.pictures.length; i++) {
-            if (!album.pictures[i].isDeleted) {
-                visibleCount++;
-            }
-        }
-
-        string[] memory visiblePictures = new string[](visibleCount);
-        uint256 currentIndex = 0;
-        for (uint256 i = 0; i < album.pictures.length; i++) {
-            if (!album.pictures[i].isDeleted) {
-                visiblePictures[currentIndex] = album.pictures[i].ipfsCID;
-                currentIndex++;
-            }
-        }
-        return visiblePictures;
+        return albums[albumId].pictures;
     }
 
     function getUserAlbums(address user) public view returns (uint256[] memory) {
